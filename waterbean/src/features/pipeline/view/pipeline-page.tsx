@@ -8,6 +8,8 @@ import { Card } from "@/shared/ui/card";
 import { StatsCards } from "./components/stats-cards";
 import { DistributionTable } from "./components/distribution-table";
 import { IssuesPanel } from "./components/issues-panel";
+import { AgentProgress } from "./components/agent-progress";
+import { RunProgressBanner } from "@/shared/ui/run-progress-banner";
 import { Info, Loader2 } from "lucide-react";
 
 const DOMAIN_KEYS = ["all", "auth", "payment", "content", "membership", "community", "creator", "admin"] as const;
@@ -17,7 +19,7 @@ const FALLBACK_KEYS = ["0", "1", "2", "3"] as const;
 
 export function PipelinePage() {
   const { t } = useTranslation();
-  const { run, loading, result, error } = usePipeline();
+  const { run, loading, result, error, agents, statusMessage } = usePipeline();
   const skills = useSkills();
 
   const domainOptions = useMemo(
@@ -37,6 +39,7 @@ export function PipelinePage() {
   const [env, setEnv] = useState("WEB-CHROME");
   const [fallback, setFallback] = useState("2");
   const [skillId, setSkillId] = useState("default");
+  const [implementation, setImplementation] = useState<"deterministic" | "llm">("llm");
 
   const skillOptions = skills.map((s) => ({ value: s.id, label: s.name }));
 
@@ -52,6 +55,7 @@ export function PipelinePage() {
       environmentDefault: env,
       maxFallbackRounds: Number(fallback),
       skillId,
+      implementation,
     });
   };
 
@@ -128,6 +132,16 @@ export function PipelinePage() {
                 onChange={(e) => setSkillId(e.target.value)}
               />
             )}
+            <Select
+              id="implementation"
+              label={t("pipeline.label.implementation", "Engine")}
+              options={[
+                { value: "llm", label: "LLM (Gemini)" },
+                { value: "deterministic", label: t("pipeline.label.deterministic", "Rule-based") },
+              ]}
+              value={implementation}
+              onChange={(e) => setImplementation(e.target.value as "deterministic" | "llm")}
+            />
           </div>
 
           <div className="flex justify-end">
@@ -138,6 +152,10 @@ export function PipelinePage() {
           </div>
         </form>
       </Card>
+
+      <RunProgressBanner message={loading ? statusMessage : null} />
+
+      <AgentProgress agents={agents} />
 
       {error && (
         <Card className="border-danger/30 bg-danger/5">

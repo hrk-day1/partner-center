@@ -1,6 +1,7 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { apiGet, apiPost } from "@/shared/lib/api-client";
+import { subscribeToPipelineEvents, type AgentEvent } from "@/shared/lib/sse-client";
 
 interface DomainDistribution {
   Auth: number;
@@ -57,12 +58,21 @@ export interface PipelineRequest {
   environmentDefault: string;
   maxFallbackRounds: number;
   skillId: string;
+  implementation?: "deterministic" | "llm";
 }
 
 export interface SkillSummary {
   id: string;
   name: string;
   description: string;
+}
+
+export interface AgentState {
+  agentId: string;
+  agentType: "plan" | "generator" | "evaluator";
+  status: "pending" | "running" | "completed" | "failed";
+  progress: number;
+  message: string;
 }
 
 export function useSkills() {
@@ -78,26 +88,152 @@ export function useSkills() {
   return skills;
 }
 
+const POLL_MS = 2000;
+const POLL_MAX = 90;
+
 export function usePipeline() {
   const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<PipelineResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [agents, setAgents] = useState<AgentState[]>([]);
+  const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const unsubRef = useRef<(() => void) | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const run = useCallback(async (request: PipelineRequest) => {
-    setLoading(true);
-    setError(null);
-    setResult(null);
-
-    try {
-      const data = await apiPost<PipelineResult>("/pipeline/run", request);
-      setResult(data);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : t("error.unknown"));
-    } finally {
-      setLoading(false);
+  const clearPoll = useCallback(() => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
     }
-  }, [t]);
+  }, []);
 
-  return { run, loading, result, error };
+  const updateAgent = useCallback((event: AgentEvent) => {
+    setAgents((prev) => {
+      const idx = prev.findIndex((a) => a.agentId === event.agentId);
+      const state: AgentState = {
+        agentId: event.agentId,
+        agentType: event.agentType,
+        status: event.status,
+        progress: event.progress,
+        message: event.message,
+      };
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = state;
+        return next;
+      }
+      return [...prev, state];
+    });
+  }, []);
+
+  const finishPipeline = useCallback(
+    (data: PipelineResult) => {
+      clearPoll();
+      setResult(data);
+      setLoading(false);
+      setStatusMessage(null);
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
+      }
+    },
+    [clearPoll],
+  );
+
+  const run = useCallback(
+    async (request: PipelineRequest) => {
+      setLoading(true);
+      setError(null);
+      setResult(null);
+      setAgents([]);
+      setStatusMessage(t("pipeline.progress.starting", "실행을 시작합니다…"));
+
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
+      }
+      clearPoll();
+
+      try {
+        const { pipelineId } = await apiPost<{ pipelineId: string }>("/pipeline/run/async", request);
+        setStatusMessage(t("pipeline.progress.running", "파이프라인 처리 중…"));
+
+        let pollAttempts = 0;
+        const startPoll = () => {
+          clearPoll();
+          pollRef.current = setInterval(async () => {
+            pollAttempts += 1;
+            if (pollAttempts > POLL_MAX) {
+              clearPoll();
+              setError(t("pipeline.progress.timeout", "진행 상태를 확인하지 못했습니다. 잠시 후 결과를 다시 확인해 주세요."));
+              setLoading(false);
+              setStatusMessage(null);
+              if (unsubRef.current) {
+                unsubRef.current();
+                unsubRef.current = null;
+              }
+              return;
+            }
+            try {
+              const res = await fetch(`/api/pipeline/run/${pipelineId}/result`);
+              if (res.ok && res.status === 200) {
+                const data = (await res.json()) as PipelineResult;
+                finishPipeline(data);
+              }
+            } catch {
+              // keep polling
+            }
+          }, POLL_MS);
+        };
+
+        unsubRef.current = subscribeToPipelineEvents(
+          pipelineId,
+          (ev) => {
+            updateAgent(ev);
+            setStatusMessage(ev.message);
+          },
+          (payload) => {
+            clearPoll();
+            if (payload && typeof payload === "object" && "sheetName" in (payload as object)) {
+              finishPipeline(payload as PipelineResult);
+            } else {
+              void (async () => {
+                try {
+                  const res = await fetch(`/api/pipeline/run/${pipelineId}/result`);
+                  if (res.ok) {
+                    finishPipeline((await res.json()) as PipelineResult);
+                  } else {
+                    setLoading(false);
+                    setStatusMessage(null);
+                  }
+                } catch {
+                  setLoading(false);
+                  setStatusMessage(null);
+                }
+              })();
+            }
+          },
+          () => {
+            startPoll();
+          },
+        );
+      } catch (err) {
+        setError(err instanceof Error ? err.message : t("error.unknown"));
+        setLoading(false);
+        setStatusMessage(null);
+        clearPoll();
+      }
+    },
+    [t, updateAgent, clearPoll, finishPipeline],
+  );
+
+  useEffect(() => {
+    return () => {
+      if (unsubRef.current) unsubRef.current();
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  return { run, loading, result, error, agents, statusMessage };
 }

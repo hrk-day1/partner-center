@@ -17,6 +17,10 @@
   "pipeline.label.environment": "기본 Environment",
   "pipeline.button.running": "생성 중...",
   "pipeline.button.run": "파이프라인 실행",
+  "pipeline.progress.starting": "실행을 시작합니다…",
+  "pipeline.progress.running": "파이프라인 처리 중…",
+  "pipeline.progress.timeout": "진행 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  "pipeline.agentProgress.title": "단계별 진행",
 
   "pipeline.domain.all": "전체 도메인",
   "pipeline.domain.auth": "Auth (인증)",
@@ -60,6 +64,11 @@
   "fork.button.delete": "삭제",
   "fork.button.running": "실행 중...",
   "fork.button.run": "Fork 실행",
+  "fork.progress.starting": "Fork 실행을 시작합니다…",
+  "fork.progress.running": "변형별 파이프라인 실행 중…",
+  "fork.progress.timeout": "진행 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
+  "fork.agentProgress.root": "Fork 전체",
+  "fork.agentProgress.variant": "변형 {{label}}",
   "fork.label.label": "라벨",
   "fork.label.domain": "도메인",
 

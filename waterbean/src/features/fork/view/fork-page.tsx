@@ -7,6 +7,8 @@ import { Input } from "@/shared/ui/input";
 import { Select } from "@/shared/ui/select";
 import { Card } from "@/shared/ui/card";
 import { ForkComparison } from "./components/fork-comparison";
+import { AgentProgress } from "@/features/pipeline/view/components/agent-progress";
+import { RunProgressBanner } from "@/shared/ui/run-progress-banner";
 import { Info, Loader2, Plus, Trash2 } from "lucide-react";
 
 const FORK_DOMAIN_VALUES = ["ALL", "AUTH", "PAY", "CONTENT", "MEMBERSHIP", "COMMUNITY", "CREATOR", "ADMIN"] as const;
@@ -26,7 +28,7 @@ function createVariant(label: string, skillId = "default"): VariantForm {
 
 export function ForkPage() {
   const { t } = useTranslation();
-  const { run, loading, result, error } = useFork();
+  const { run, loading, result, error, agents, statusMessage } = useFork();
   const skills = useSkills();
   const skillOptions = skills.map((s) => ({ value: s.id, label: s.name }));
 
@@ -207,6 +209,10 @@ export function ForkPage() {
           </div>
         </form>
       </Card>
+
+      <RunProgressBanner message={loading ? statusMessage : null} />
+
+      <AgentProgress agents={agents} />
 
       {error && (
         <Card className="border-danger/30 bg-danger/5">

@@ -1,8 +1,13 @@
-import { Router } from "express";
+import crypto from "node:crypto";
+import { Router, type Request, type Response } from "express";
 import { z } from "zod";
 import { runPipeline } from "../pipeline/runner.js";
 import { runFork } from "../pipeline/fork-runner.js";
 import { listSkills } from "../skills/registry.js";
+import { orchestrate } from "../agents/orchestrator.js";
+import { eventBus } from "../agents/event-bus.js";
+import { getExecution } from "../agents/store.js";
+import { listAgents } from "../agents/registry.js";
 
 export const pipelineRouter = Router();
 
@@ -17,6 +22,8 @@ const RunRequestSchema = z.object({
   maxTcPerRequirement: z.number().int().positive().optional(),
   maxFallbackRounds: z.number().int().min(0).max(5).default(2),
   skillId: z.string().default("default"),
+  implementation: z.enum(["deterministic", "llm"]).default("llm"),
+  maxLlmRounds: z.number().int().min(0).max(5).default(3),
 });
 
 pipelineRouter.get("/skills", (_req, res) => {
@@ -39,6 +46,83 @@ pipelineRouter.post("/run", async (req, res) => {
     console.error("[pipeline] error:", err);
     res.status(500).json({ error: message });
   }
+});
+
+// --- Async execution ---
+pipelineRouter.post("/run/async", (req, res) => {
+  const parsed = RunRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const pipelineId = crypto.randomUUID().slice(0, 8);
+  void orchestrate(parsed.data, { pipelineId }).catch((err) => {
+    console.error("[pipeline/async] error:", err);
+  });
+
+  res.json({ pipelineId, status: "started" });
+});
+
+function attachProgressSse(res: Response, req: Request, channelId: string): void {
+  res.writeHead(200, {
+    "Content-Type": "text/event-stream",
+    "Cache-Control": "no-cache",
+    Connection: "keep-alive",
+    "X-Accel-Buffering": "no",
+  });
+
+  res.write(`data: ${JSON.stringify({ type: "connected", channelId })}\n\n`);
+
+  const unsubscribe = eventBus.subscribe(channelId, (event) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+
+    const payload = event.payload as { pipelineFinished?: boolean } | undefined;
+    if (payload?.pipelineFinished) {
+      const exec = getExecution(channelId);
+      res.write(`data: ${JSON.stringify({ type: "pipeline_complete", result: exec?.result })}\n\n`);
+      res.end();
+      unsubscribe();
+    }
+  });
+
+  req.on("close", () => {
+    unsubscribe();
+  });
+}
+
+// --- SSE event stream ---
+pipelineRouter.get("/run/:pipelineId/events", (req, res) => {
+  attachProgressSse(res, req, req.params.pipelineId);
+});
+
+// --- Pipeline result ---
+pipelineRouter.get("/run/:pipelineId/result", (req, res) => {
+  const exec = getExecution(req.params.pipelineId);
+  if (!exec) {
+    res.status(404).json({ error: "Pipeline not found" });
+    return;
+  }
+  if (!exec.completedAt) {
+    res.status(202).json({ status: "running", agents: exec.agents });
+    return;
+  }
+  res.json(exec.result);
+});
+
+// --- Agent states ---
+pipelineRouter.get("/run/:pipelineId/agents", (req, res) => {
+  const exec = getExecution(req.params.pipelineId);
+  if (!exec) {
+    res.status(404).json({ error: "Pipeline not found" });
+    return;
+  }
+  res.json({ pipelineId: exec.pipelineId, agents: exec.agents });
+});
+
+// --- Registered agents list ---
+pipelineRouter.get("/agents", (_req, res) => {
+  res.json(listAgents());
 });
 
 const ForkVariantSchema = z.object({
@@ -72,4 +156,36 @@ pipelineRouter.post("/fork", async (req, res) => {
     console.error("[fork] error:", err);
     res.status(500).json({ error: message });
   }
+});
+
+pipelineRouter.post("/fork/async", (req, res) => {
+  const parsed = ForkRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: parsed.error.flatten() });
+    return;
+  }
+
+  const forkId = crypto.randomUUID().slice(0, 8);
+  void runFork(parsed.data, { forkId, emitProgress: true }).catch((err) => {
+    console.error("[fork/async] error:", err);
+  });
+
+  res.json({ forkId, status: "started" });
+});
+
+pipelineRouter.get("/fork/:forkId/events", (req, res) => {
+  attachProgressSse(res, req, req.params.forkId);
+});
+
+pipelineRouter.get("/fork/:forkId/result", (req, res) => {
+  const exec = getExecution(req.params.forkId);
+  if (!exec) {
+    res.status(404).json({ error: "Fork run not found" });
+    return;
+  }
+  if (!exec.completedAt) {
+    res.status(202).json({ status: "running", agents: exec.agents });
+    return;
+  }
+  res.json(exec.result);
 });

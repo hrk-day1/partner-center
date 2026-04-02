@@ -17,6 +17,10 @@
   "pipeline.label.environment": "Default Environment",
   "pipeline.button.running": "Generating...",
   "pipeline.button.run": "Run Pipeline",
+  "pipeline.progress.starting": "Starting run…",
+  "pipeline.progress.running": "Pipeline in progress…",
+  "pipeline.progress.timeout": "Could not load progress. Please try again.",
+  "pipeline.agentProgress.title": "Step progress",
 
   "pipeline.domain.all": "All Domains",
   "pipeline.domain.auth": "Auth",
@@ -60,6 +64,11 @@
   "fork.button.delete": "Delete",
   "fork.button.running": "Running...",
   "fork.button.run": "Run Fork",
+  "fork.progress.starting": "Starting fork…",
+  "fork.progress.running": "Running variant pipelines…",
+  "fork.progress.timeout": "Could not load progress. Please try again.",
+  "fork.agentProgress.root": "Fork",
+  "fork.agentProgress.variant": "Variant {{label}}",
   "fork.label.label": "Label",
   "fork.label.domain": "Domain",
 

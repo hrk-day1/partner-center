@@ -1,5 +1,7 @@
 import type { ChecklistItem, Domain, Priority, TestCase, TcType } from "./tc.js";
 
+export type Implementation = "deterministic" | "llm";
+
 export interface PipelineConfig {
   spreadsheetUrl: string;
   sourceSheetName?: string;
@@ -11,6 +13,8 @@ export interface PipelineConfig {
   maxTcPerRequirement?: number;
   maxFallbackRounds: number;
   skillId: string;
+  implementation?: Implementation;
+  maxLlmRounds?: number;
 }
 
 export interface PlanResult {

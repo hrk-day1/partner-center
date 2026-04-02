@@ -2,6 +2,13 @@ import express from "express";
 import cors from "cors";
 import { env } from "./config/env.js";
 import { pipelineRouter } from "./routes/pipeline.js";
+import { setupAgents } from "./agents/setup.js";
+
+setupAgents();
+
+if (!env.geminiApiKey) {
+  console.warn("[api] WARNING: GEMINI_API_KEY is not set. LLM agents will fail. Set it in .env file.");
+}
 
 const app = express();
 
