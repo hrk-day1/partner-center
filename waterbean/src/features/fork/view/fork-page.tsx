@@ -9,6 +9,7 @@ import { Card } from "@/shared/ui/card";
 import { ForkComparison } from "./components/fork-comparison";
 import { AgentProgress } from "@/features/pipeline/view/components/agent-progress";
 import { RunProgressBanner } from "@/shared/ui/run-progress-banner";
+import { useAutoScrollBottom } from "@/shared/lib/use-auto-scroll-bottom";
 import { Info, Loader2, Plus, Trash2 } from "lucide-react";
 
 const FORK_DOMAIN_VALUES = ["ALL", "AUTH", "PAY", "CONTENT", "MEMBERSHIP", "COMMUNITY", "CREATOR", "ADMIN"] as const;
@@ -18,12 +19,13 @@ const FORK_FALLBACK_KEYS = ["0", "1", "2", "3"] as const;
 interface VariantForm {
   label: string;
   skillId: string;
+  domainMode: "preset" | "discovered";
   domainScope: string;
   maxFallbackRounds: string;
 }
 
 function createVariant(label: string, skillId = "default"): VariantForm {
-  return { label, skillId, domainScope: "ALL", maxFallbackRounds: "2" };
+  return { label, skillId, domainMode: "preset", domainScope: "ALL", maxFallbackRounds: "2" };
 }
 
 export function ForkPage() {
@@ -66,6 +68,8 @@ export function ForkPage() {
     setVariants((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  const bottomRef = useAutoScrollBottom([agents, result, error]);
+
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!url.trim() || variants.length < 2) return;
@@ -78,6 +82,7 @@ export function ForkPage() {
       variants: variants.map((v) => ({
         label: v.label,
         skillId: v.skillId,
+        domainMode: v.domainMode,
         domainScope: v.domainScope,
         maxFallbackRounds: Number(v.maxFallbackRounds),
       })),
@@ -150,7 +155,7 @@ export function ForkPage() {
             {variants.map((v, idx) => (
               <div
                 key={idx}
-                className="grid grid-cols-[80px_1fr_1fr_100px_40px] items-end gap-3 rounded-md border border-border bg-surface-alt p-3"
+                className="grid grid-cols-1 items-end gap-3 rounded-md border border-border bg-surface-alt p-3 sm:grid-cols-2 lg:grid-cols-[72px_minmax(0,1fr)_minmax(0,0.9fr)_minmax(0,1fr)_88px_36px]"
               >
                 <Input
                   id={`v-label-${idx}`}
@@ -175,10 +180,27 @@ export function ForkPage() {
                   />
                 )}
                 <Select
+                  id={`v-domainMode-${idx}`}
+                  label={idx === 0 ? t("fork.label.domainMode") : undefined}
+                  options={[
+                    { value: "preset", label: t("fork.domainMode.preset") },
+                    { value: "discovered", label: t("fork.domainMode.discovered") },
+                  ]}
+                  value={v.domainMode}
+                  onChange={(e) => {
+                    const m = e.target.value as "preset" | "discovered";
+                    updateVariant(idx, {
+                      domainMode: m,
+                      ...(m === "discovered" ? { domainScope: "ALL" } : {}),
+                    });
+                  }}
+                />
+                <Select
                   id={`v-domain-${idx}`}
                   label={idx === 0 ? t("fork.label.domain") : undefined}
                   options={domainOptions}
                   value={v.domainScope}
+                  disabled={v.domainMode === "discovered"}
                   onChange={(e) => updateVariant(idx, { domainScope: e.target.value })}
                 />
                 <Select
@@ -233,6 +255,8 @@ export function ForkPage() {
           <ForkComparison results={result.results} />
         </div>
       )}
+
+      <div ref={bottomRef} />
     </div>
   );
 }

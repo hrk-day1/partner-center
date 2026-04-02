@@ -11,20 +11,33 @@ import { listAgents } from "../agents/registry.js";
 
 export const pipelineRouter = Router();
 
-const RunRequestSchema = z.object({
-  spreadsheetUrl: z.string().url(),
-  sourceSheetName: z.string().optional(),
-  sourceGid: z.string().optional(),
-  targetSheetName: z.string().default("QA_TC_Master"),
-  domainScope: z.enum(["ALL", "AUTH", "PAY", "CONTENT", "MEMBERSHIP", "COMMUNITY", "CREATOR", "ADMIN"]).default("ALL"),
-  ownerDefault: z.string().default("TBD"),
-  environmentDefault: z.string().default("WEB-CHROME"),
-  maxTcPerRequirement: z.number().int().positive().optional(),
-  maxFallbackRounds: z.number().int().min(0).max(5).default(2),
-  skillId: z.string().default("default"),
-  implementation: z.enum(["deterministic", "llm"]).default("llm"),
-  maxLlmRounds: z.number().int().min(0).max(5).default(3),
-});
+const RunRequestSchema = z
+  .object({
+    spreadsheetUrl: z.string().url(),
+    sourceSheetName: z.string().optional(),
+    sourceGid: z.string().optional(),
+    targetSheetName: z.string().default("QA_TC_Master"),
+    domainMode: z.enum(["preset", "discovered"]).default("preset"),
+    domainScope: z
+      .enum(["ALL", "AUTH", "PAY", "CONTENT", "MEMBERSHIP", "COMMUNITY", "CREATOR", "ADMIN"])
+      .default("ALL"),
+    ownerDefault: z.string().default("TBD"),
+    environmentDefault: z.string().default("WEB-CHROME"),
+    maxTcPerRequirement: z.number().int().positive().optional(),
+    maxFallbackRounds: z.number().int().min(0).max(5).default(2),
+    skillId: z.string().default("default"),
+    implementation: z.enum(["deterministic", "llm"]).default("llm"),
+    maxLlmRounds: z.number().int().min(0).max(5).default(3),
+  })
+  .superRefine((val, ctx) => {
+    if (val.domainMode === "discovered" && val.domainScope !== "ALL") {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "domainMode 'discovered'일 때 domainScope는 ALL만 허용됩니다.",
+        path: ["domainScope"],
+      });
+    }
+  });
 
 pipelineRouter.get("/skills", (_req, res) => {
   const skills = listSkills();
@@ -128,18 +141,31 @@ pipelineRouter.get("/agents", (_req, res) => {
 const ForkVariantSchema = z.object({
   label: z.string().min(1),
   skillId: z.string().default("default"),
+  domainMode: z.enum(["preset", "discovered"]).default("preset"),
   domainScope: z.enum(["ALL", "AUTH", "PAY", "CONTENT", "MEMBERSHIP", "COMMUNITY", "CREATOR", "ADMIN"]).default("ALL"),
   maxFallbackRounds: z.number().int().min(0).max(5).default(2),
 });
 
-const ForkRequestSchema = z.object({
-  spreadsheetUrl: z.string().url(),
-  baseSheetName: z.string().default("QA_TC_Fork"),
-  ownerDefault: z.string().default("TBD"),
-  environmentDefault: z.string().default("WEB-CHROME"),
-  maxTcPerRequirement: z.number().int().positive().optional(),
-  variants: z.array(ForkVariantSchema).min(2).max(5),
-});
+const ForkRequestSchema = z
+  .object({
+    spreadsheetUrl: z.string().url(),
+    baseSheetName: z.string().default("QA_TC_Fork"),
+    ownerDefault: z.string().default("TBD"),
+    environmentDefault: z.string().default("WEB-CHROME"),
+    maxTcPerRequirement: z.number().int().positive().optional(),
+    variants: z.array(ForkVariantSchema).min(2).max(5),
+  })
+  .superRefine((data, ctx) => {
+    data.variants.forEach((v, i) => {
+      if (v.domainMode === "discovered" && v.domainScope !== "ALL") {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "domainMode 'discovered'일 때 domainScope는 ALL만 허용됩니다.",
+          path: ["variants", i, "domainScope"],
+        });
+      }
+    });
+  });
 
 pipelineRouter.post("/fork", async (req, res) => {
   const parsed = ForkRequestSchema.safeParse(req.body);

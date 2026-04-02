@@ -70,7 +70,8 @@ export interface ChecklistItem {
   id: string;
   requirementId: string;
   feature: string;
-  domain: Domain;
+  /** preset: Auth, Payment, … / discovered: Taxonomy 도메인 id */
+  domain: string;
   description: string;
   sourceRow: number;
   sourceSheet: string;

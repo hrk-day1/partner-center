@@ -1,4 +1,4 @@
-export type AgentType = "plan" | "generator" | "evaluator";
+export type AgentType = "taxonomy" | "plan" | "generator" | "evaluator";
 export type AgentStatus = "pending" | "running" | "completed" | "failed";
 export type Implementation = "deterministic" | "llm";
 

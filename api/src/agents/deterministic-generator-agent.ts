@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { ChecklistItem, TestCase } from "../types/tc.js";
-import type { SkillManifest } from "../skills/types.js";
+import type { ResolvedSkill } from "../skills/resolved-skill.js";
 import { generateTestCases } from "../pipeline/generator.js";
 import type { Agent } from "./registry.js";
 import type { AgentResult, SubAgentConfig } from "./types.js";
@@ -9,7 +9,7 @@ import type { eventBus } from "./event-bus.js";
 export interface GeneratorInput {
   checklist: ChecklistItem[];
   config: { ownerDefault: string; environmentDefault: string; maxTcPerRequirement?: number };
-  skill: SkillManifest;
+  resolvedSkill: ResolvedSkill;
 }
 
 export class DeterministicGeneratorAgent implements Agent<GeneratorInput, TestCase[]> {
@@ -30,7 +30,7 @@ export class DeterministicGeneratorAgent implements Agent<GeneratorInput, TestCa
     });
 
     try {
-      const testCases = generateTestCases(input.checklist, input.config, input.skill);
+      const testCases = generateTestCases(input.checklist, input.config, input.resolvedSkill);
 
       bus.emit(config.pipelineId, {
         agentId, agentType: "generator", status: "completed", progress: 100,

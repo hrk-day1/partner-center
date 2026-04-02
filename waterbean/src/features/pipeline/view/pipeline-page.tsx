@@ -10,6 +10,7 @@ import { DistributionTable } from "./components/distribution-table";
 import { IssuesPanel } from "./components/issues-panel";
 import { AgentProgress } from "./components/agent-progress";
 import { RunProgressBanner } from "@/shared/ui/run-progress-banner";
+import { useAutoScrollBottom } from "@/shared/lib/use-auto-scroll-bottom";
 import { Info, Loader2 } from "lucide-react";
 
 const DOMAIN_KEYS = ["all", "auth", "payment", "content", "membership", "community", "creator", "admin"] as const;
@@ -34,6 +35,7 @@ export function PipelinePage() {
 
   const [url, setUrl] = useState("");
   const [sheetName, setSheetName] = useState("QA_TC_Master");
+  const [domainMode, setDomainMode] = useState<"preset" | "discovered">("preset");
   const [domain, setDomain] = useState("ALL");
   const [owner, setOwner] = useState("TBD");
   const [env, setEnv] = useState("WEB-CHROME");
@@ -50,6 +52,7 @@ export function PipelinePage() {
     run({
       spreadsheetUrl: url.trim(),
       targetSheetName: sheetName,
+      domainMode,
       domainScope: domain,
       ownerDefault: owner,
       environmentDefault: env,
@@ -60,6 +63,7 @@ export function PipelinePage() {
   };
 
   const selectedSkill = skills.find((s) => s.id === skillId);
+  const bottomRef = useAutoScrollBottom([agents, result, error]);
 
   return (
     <div className="space-y-8">
@@ -87,7 +91,7 @@ export function PipelinePage() {
             required
           />
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Input
               id="sheetName"
               label={t("pipeline.label.sheetName")}
@@ -95,10 +99,25 @@ export function PipelinePage() {
               onChange={(e) => setSheetName(e.target.value)}
             />
             <Select
+              id="domainMode"
+              label={t("pipeline.label.domainMode")}
+              options={[
+                { value: "preset", label: t("pipeline.domainMode.preset") },
+                { value: "discovered", label: t("pipeline.domainMode.discovered") },
+              ]}
+              value={domainMode}
+              onChange={(e) => {
+                const m = e.target.value as "preset" | "discovered";
+                setDomainMode(m);
+                if (m === "discovered") setDomain("ALL");
+              }}
+            />
+            <Select
               id="domain"
               label={t("pipeline.label.domainScope")}
               options={domainOptions}
               value={domain}
+              disabled={domainMode === "discovered"}
               onChange={(e) => setDomain(e.target.value)}
             />
             <Select
@@ -109,6 +128,9 @@ export function PipelinePage() {
               onChange={(e) => setFallback(e.target.value)}
             />
           </div>
+          {domainMode === "discovered" && (
+            <p className="text-xs text-zinc-500">{t("pipeline.hint.discoveredRequiresAll")}</p>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-3">
             <Input
@@ -170,6 +192,8 @@ export function PipelinePage() {
           <IssuesPanel result={result} />
         </div>
       )}
+
+      <div ref={bottomRef} />
     </div>
   );
 }

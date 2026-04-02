@@ -3,7 +3,6 @@ import { z } from "zod";
 import type { ChecklistItem, TestCase } from "../types/tc.js";
 import { TC_TYPES } from "../types/tc.js";
 import type { EvaluationResult } from "../types/pipeline.js";
-import type { SkillManifest } from "../skills/types.js";
 import { evaluate } from "../pipeline/evaluator.js";
 import { generateJson } from "../llm/gemini-client.js";
 import { buildRepairPrompt } from "../llm/prompts/evaluator-prompt.js";
@@ -57,7 +56,7 @@ export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult
     });
 
     try {
-      let evalResult = evaluate(input.checklist, allTcs, input.skill);
+      let evalResult = evaluate(input.checklist, allTcs, input.resolvedSkill);
       let round = 0;
 
       while (
@@ -79,7 +78,7 @@ export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult
           evalResult.issues,
           evalResult.uncoveredItems,
           allTcs,
-          input.skill,
+          input.resolvedSkill,
           input.config,
           nextTcId,
         );
@@ -91,7 +90,7 @@ export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult
           console.log(`[llm-eval] repair round ${round}: +${repairResult.newTestCases.length} TCs, note: ${repairResult.repairNotes}`);
         }
 
-        evalResult = evaluate(input.checklist, allTcs, input.skill);
+        evalResult = evaluate(input.checklist, allTcs, input.resolvedSkill);
       }
 
       bus.emit(config.pipelineId, {
@@ -111,7 +110,7 @@ export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult
       const message = err instanceof Error ? err.message : "Unknown error";
       console.warn(`[llm-eval] LLM repair failed, returning rule-only result: ${message}`);
 
-      const evalResult = evaluate(input.checklist, allTcs, input.skill);
+      const evalResult = evaluate(input.checklist, allTcs, input.resolvedSkill);
 
       bus.emit(config.pipelineId, {
         agentId, agentType: "evaluator", status: "completed", progress: 100,

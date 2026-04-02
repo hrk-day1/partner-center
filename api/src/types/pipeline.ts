@@ -1,12 +1,16 @@
-import type { ChecklistItem, Domain, Priority, TestCase, TcType } from "./tc.js";
+import type { ChecklistItem, Priority, TestCase, TcType } from "./tc.js";
 
 export type Implementation = "deterministic" | "llm";
+
+export type DomainMode = "preset" | "discovered";
 
 export interface PipelineConfig {
   spreadsheetUrl: string;
   sourceSheetName?: string;
   sourceGid?: string;
   targetSheetName: string;
+  /** preset: 기존 스킬 7도메인 / discovered: Taxonomy LLM으로 동적 도메인 (MVP는 domainScope ALL만) */
+  domainMode?: DomainMode;
   domainScope: "ALL" | "AUTH" | "PAY" | "CONTENT" | "MEMBERSHIP" | "COMMUNITY" | "CREATOR" | "ADMIN";
   ownerDefault: string;
   environmentDefault: string;
@@ -43,7 +47,7 @@ export interface EvaluationResult {
 
 export interface PipelineStats {
   totalTCs: number;
-  domainDistribution: Record<Domain, number>;
+  domainDistribution: Record<string, number>;
   priorityDistribution: Record<Priority, number>;
   typeDistribution: Record<TcType, number>;
   coverageGaps: string[];

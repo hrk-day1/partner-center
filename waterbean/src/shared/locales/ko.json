@@ -21,6 +21,11 @@
   "pipeline.progress.running": "파이프라인 처리 중…",
   "pipeline.progress.timeout": "진행 상태를 확인하지 못했습니다. 잠시 후 다시 시도해 주세요.",
   "pipeline.agentProgress.title": "단계별 진행",
+  "pipeline.label.domainMode": "도메인 모드",
+  "pipeline.domainMode.preset": "프리셋 (기본 7도메인)",
+  "pipeline.domainMode.discovered": "Taxonomy (LLM 동적 도메인)",
+  "pipeline.hint.discoveredRequiresAll": "Taxonomy 모드에서는 도메인 범위가 전체(ALL)로 고정됩니다. GEMINI_API_KEY가 필요합니다.",
+  "pipeline.agentProgress.taxonomy": "분류 체계 도출",
 
   "pipeline.domain.all": "전체 도메인",
   "pipeline.domain.auth": "Auth (인증)",
@@ -70,7 +75,10 @@
   "fork.agentProgress.root": "Fork 전체",
   "fork.agentProgress.variant": "변형 {{label}}",
   "fork.label.label": "라벨",
+  "fork.label.domainMode": "도메인 모드",
   "fork.label.domain": "도메인",
+  "fork.domainMode.preset": "프리셋",
+  "fork.domainMode.discovered": "Taxonomy",
 
   "fork.domain.all": "전체 도메인",
   "fork.domain.auth": "Auth",

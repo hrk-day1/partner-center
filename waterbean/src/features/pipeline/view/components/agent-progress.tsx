@@ -22,6 +22,7 @@ const STATUS_COLORS = {
 } as const;
 
 const AGENT_LABELS: Record<string, string> = {
+  taxonomy: "Taxonomy",
   plan: "Plan",
   generator: "Generator",
   evaluator: "Evaluator",
@@ -46,7 +47,9 @@ export function AgentProgress({ agents }: AgentProgressProps) {
               ? t("fork.agentProgress.root")
               : agent.agentId.startsWith("fork-")
                 ? t("fork.agentProgress.variant", { label: agent.agentId.slice(5) })
-                : (AGENT_LABELS[agent.agentType] ?? agent.agentType);
+                : agent.agentType === "taxonomy"
+                  ? t("pipeline.agentProgress.taxonomy")
+                  : (AGENT_LABELS[agent.agentType] ?? agent.agentType);
 
           return (
             <div key={agent.agentId} className="flex items-center gap-3">

@@ -1,5 +1,6 @@
-import type { ChecklistItem, Domain } from "../../types/tc.js";
-import type { SkillManifest, TcTemplate } from "../../skills/types.js";
+import type { ChecklistItem } from "../../types/tc.js";
+import type { TcTemplate } from "../../skills/types.js";
+import type { ResolvedSkill } from "../../skills/resolved-skill.js";
 import { TC_TYPES } from "../../types/tc.js";
 
 function formatTemplateExamples(templates: TcTemplate[], limit = 3): string {
@@ -14,13 +15,13 @@ function formatTemplateExamples(templates: TcTemplate[], limit = 3): string {
 
 export function buildGeneratorPrompt(
   checklist: ChecklistItem[],
-  domain: Domain,
-  skill: SkillManifest,
+  domain: string,
+  resolved: ResolvedSkill,
   config: { ownerDefault: string; environmentDefault: string },
   startTcId: number,
 ): string {
-  const domainTemplates = skill.templates[domain] ?? [];
-  const minSet = skill.domainMinSets[domain];
+  const domainTemplates = resolved.templates[domain] ?? [];
+  const minSet = resolved.domainMinSets[domain] ?? {};
 
   const checklistJson = checklist.map((c) => ({
     requirementId: c.requirementId,
@@ -40,7 +41,9 @@ export function buildGeneratorPrompt(
 ${formatTemplateExamples(domainTemplates, 5)}
 
 ## 도메인 최소 세트 요구사항
-${Object.entries(minSet).map(([type, count]) => `  - ${type}: 최소 ${count}건`).join("\n")}
+${Object.keys(minSet).length
+    ? Object.entries(minSet).map(([type, count]) => `  - ${type}: 최소 ${count}건`).join("\n")
+    : "  - (해당 도메인에 별도 최소 세트 없음)"}
 
 ## 허용 TC Type
 ${JSON.stringify([...TC_TYPES])}

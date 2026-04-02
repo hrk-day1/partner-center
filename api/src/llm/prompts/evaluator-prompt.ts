@@ -1,13 +1,13 @@
 import type { ChecklistItem, TestCase } from "../../types/tc.js";
 import type { EvaluationIssue } from "../../types/pipeline.js";
-import type { SkillManifest } from "../../skills/types.js";
-import { DOMAINS, TC_TYPES } from "../../types/tc.js";
+import type { ResolvedSkill } from "../../skills/resolved-skill.js";
+import { TC_TYPES } from "../../types/tc.js";
 
 export function buildRepairPrompt(
   issues: EvaluationIssue[],
   uncoveredItems: ChecklistItem[],
   existingTcs: TestCase[],
-  skill: SkillManifest,
+  resolved: ResolvedSkill,
   config: { ownerDefault: string; environmentDefault: string },
   nextTcId: number,
 ): string {
@@ -33,9 +33,9 @@ export function buildRepairPrompt(
     Severity: tc.Severity,
   }));
 
-  const minSets = DOMAINS.map(
-    (d) => `  ${d}: ${JSON.stringify(skill.domainMinSets[d])}`,
-  ).join("\n");
+  const minSets = resolved.domainOrder
+    .map((d) => `  ${d}: ${JSON.stringify(resolved.domainMinSets[d] ?? {})}`)
+    .join("\n");
 
   return `당신은 시니어 QA 엔지니어입니다. 아래 평가 결과를 바탕으로 TC를 보완/수정하세요.
 

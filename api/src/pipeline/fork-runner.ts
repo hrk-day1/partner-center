@@ -63,6 +63,7 @@ export async function runFork(
       const config: PipelineConfig = {
         spreadsheetUrl: request.spreadsheetUrl,
         targetSheetName: sheetName,
+        domainMode: variant.domainMode ?? "preset",
         domainScope: variant.domainScope as PipelineConfig["domainScope"],
         ownerDefault: request.ownerDefault,
         environmentDefault: request.environmentDefault,
@@ -110,7 +111,7 @@ export async function runFork(
         rounds: 0,
         stats: {
           totalTCs: 0,
-          domainDistribution: { Auth: 0, Payment: 0, Content: 0, Membership: 0, Community: 0, Creator: 0, Admin: 0 },
+          domainDistribution: {},
           priorityDistribution: { P0: 0, P1: 0, P2: 0 },
           typeDistribution: { Functional: 0, Negative: 0, Boundary: 0, Regression: 0, Accessibility: 0, Security: 0 },
           coverageGaps: [`FORK_ERROR: ${errorMsg}`],

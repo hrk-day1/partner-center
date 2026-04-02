@@ -1,7 +1,7 @@
 import crypto from "node:crypto";
 import type { ChecklistItem, TestCase } from "../types/tc.js";
 import type { EvaluationResult } from "../types/pipeline.js";
-import type { SkillManifest } from "../skills/types.js";
+import type { ResolvedSkill } from "../skills/resolved-skill.js";
 import { evaluate } from "../pipeline/evaluator.js";
 import type { Agent } from "./registry.js";
 import type { AgentResult, SubAgentConfig } from "./types.js";
@@ -10,7 +10,7 @@ import type { eventBus } from "./event-bus.js";
 export interface EvaluatorInput {
   checklist: ChecklistItem[];
   testCases: TestCase[];
-  skill: SkillManifest;
+  resolvedSkill: ResolvedSkill;
   config: { ownerDefault: string; environmentDefault: string };
 }
 
@@ -31,7 +31,7 @@ export class DeterministicEvaluatorAgent implements Agent<EvaluatorInput, Evalua
     });
 
     try {
-      const result = evaluate(input.checklist, input.testCases, input.skill);
+      const result = evaluate(input.checklist, input.testCases, input.resolvedSkill);
 
       bus.emit(config.pipelineId, {
         agentId, agentType: "evaluator", status: "completed", progress: 100,

@@ -21,6 +21,11 @@
   "pipeline.progress.running": "Pipeline in progress…",
   "pipeline.progress.timeout": "Could not load progress. Please try again.",
   "pipeline.agentProgress.title": "Step progress",
+  "pipeline.label.domainMode": "Domain mode",
+  "pipeline.domainMode.preset": "Preset (7 default domains)",
+  "pipeline.domainMode.discovered": "Taxonomy (LLM-discovered domains)",
+  "pipeline.hint.discoveredRequiresAll": "Taxonomy mode fixes domain scope to ALL. GEMINI_API_KEY is required.",
+  "pipeline.agentProgress.taxonomy": "Taxonomy",
 
   "pipeline.domain.all": "All Domains",
   "pipeline.domain.auth": "Auth",
@@ -70,7 +75,10 @@
   "fork.agentProgress.root": "Fork",
   "fork.agentProgress.variant": "Variant {{label}}",
   "fork.label.label": "Label",
+  "fork.label.domainMode": "Domain mode",
   "fork.label.domain": "Domain",
+  "fork.domainMode.preset": "Preset",
+  "fork.domainMode.discovered": "Taxonomy",
 
   "fork.domain.all": "All Domains",
   "fork.domain.auth": "Auth",

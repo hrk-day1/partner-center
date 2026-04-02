@@ -111,7 +111,7 @@ graph TB
 
         subgraph llm [LLM Layer]
             GeminiClient["Gemini Client"]
-            Prompts["Prompts\n(plan / generator / evaluator)"]
+            Prompts["Prompts\n(plan / taxonomy / generator / evaluator)"]
         end
 
         Skills["Skill Presets\n(default / auth-focused)"]
@@ -167,28 +167,52 @@ graph TB
 | In-Memory Store | `api/src/agents/store.ts` | 실행 상태 저장 (TTL 기반 GC) |
 | Gemini Client | `api/src/llm/gemini-client.ts` | `@google/generative-ai` SDK 래퍼, Zod 검증, 자동 재시도 |
 
+### domainMode
+
+요청 본문 `domainMode`로 도메인 정의 방식을 고릅니다 (기본값 `preset`).
+
+| 값 | 설명 |
+|---|---|
+| `preset` | 스킬 프리셋(`default`, `auth-focused` 등)의 고정 7도메인을 [`ResolvedSkill`](api/src/skills/resolved-skill.ts)로 변환해 사용 |
+| `discovered` | **Taxonomy** 단계에서 LLM이 시트 샘플을 보고 도메인 id·키워드·템플릿·최소 세트를 구조화 생성. 우선순위·심각도 규칙은 베이스 스킬에서 유지. **`domainScope`는 `ALL`만 허용**, `GEMINI_API_KEY` 필수 |
+
 ## 파이프라인 흐름
 
 ```mermaid
 flowchart TD
-    Start["Google Sheets 읽기"] --> Plan
+    API["POST /pipeline/run/async"] --> Orch["Orchestrator\npipelineId 생성 · 실행 등록"]
 
-    subgraph pipeline [Pipeline Execution]
-        Plan["Plan Agent\n체크리스트 생성"] --> Gen["Generator Agent\nTC 생성"]
-        Gen --> Eval["Evaluator Agent\n검증"]
-        Eval -->|미통과| Fallback["Fallback 라운드\n미커버 항목 재생성"]
-        Fallback --> Eval
+    Orch --> ReadSheet["Google Sheets 읽기\nspreadsheetUrl → raw[][]"]
+    ReadSheet --> ResolveSkill["Skill 해석\nskillId → ResolvedSkill"]
+    ResolveSkill --> Branch{domainMode}
+
+    Branch -->|preset| SkipTax["skillManifestToResolved\n프리셋 도메인 사용"]
+    Branch -->|discovered| Tax["Taxonomy Agent\nLLM 동적 도메인 탐색"]
+    SkipTax --> Plan
+    Tax --> Plan
+
+    subgraph pipeline [Agent Execution — Orchestrator 제어]
+        Plan["Plan Agent\nraw → ChecklistItem[]"]
+        Plan --> Scope{"domainScope\n필터링"}
+        Scope --> Gen["Generator Agent\nChecklist → TestCase[]"]
+        Gen --> Eval["Evaluator Agent\n검증 · repair"]
+        Eval -->|"미통과 &\nuncovered > 0 &\nround ≤ max"| FallbackGen["Generator Agent\nuncovered 재생성"]
+        FallbackGen --> Eval
     end
 
-    Eval -->|통과| Write["Google Sheets 쓰기"]
-    pipeline -.->|"AgentEvent"| EventBus2["EventBus"]
-    EventBus2 -.->|SSE| UI["Waterbean UI\n실시간 진행 표시"]
+    Eval -->|통과 또는 라운드 소진| WriteSheet["Google Sheets 쓰기\ncreateSheet → writeTestCases"]
+    WriteSheet --> Complete["Orchestrator\n결과 저장 · 완료 이벤트"]
+
+    Orch -.->|"createExecution\nupdateAgentState\ncompleteExecution"| Store["In-Memory Store"]
+    pipeline -.->|"AgentEvent"| EB["EventBus"]
+    EB -.->|SSE| UI["Waterbean UI\n실시간 진행 표시"]
 ```
 
-- **Plan**: 시트의 기능 목록을 파싱하여 도메인별 체크리스트 항목을 구성합니다.
+- **Orchestrator**: 파이프라인의 전체 생명주기를 관리합니다. `pipelineId` 생성, 시트 읽기, Skill 해석, 에이전트 순차 실행, Fallback 라운드 제어, 결과 저장 및 완료 이벤트 발행까지 모든 흐름을 조율합니다. 에러 발생 시 실패 결과를 기록하고 파이프라인 종료 이벤트를 보장합니다.
+- **Plan**: 시트의 기능 목록을 파싱하여 도메인별 체크리스트 항목을 구성합니다. `domainScope`로 특정 도메인만 필터링할 수 있습니다.
 - **Generator**: Skill 규칙 또는 LLM을 통해 TC를 생성합니다.
 - **Evaluator**: 스키마, 필수값, 도메인 최소 세트, 커버리지, 중복을 검증합니다. LLM 모드에서는 자동 수리(repair)도 수행합니다.
-- **Fallback**: 미커버 항목을 자동 보완하며, 최대 라운드 수를 설정할 수 있습니다.
+- **Fallback**: 미통과 시 `uncoveredItems`를 Generator에 재투입하여 보완 생성 후 재검증합니다. `maxFallbackRounds`까지 반복합니다.
 
 비동기 실행 시 각 에이전트의 진행 상태가 **SSE(Server-Sent Events)** 로 실시간 전달되어 Waterbean UI에서 확인할 수 있습니다.
 

@@ -1,6 +1,5 @@
-import type { ChecklistItem, Domain } from "../types/tc.js";
-import { DOMAINS } from "../types/tc.js";
-import type { SkillManifest } from "../skills/types.js";
+import type { ChecklistItem } from "../types/tc.js";
+import type { ResolvedSkill } from "../skills/resolved-skill.js";
 
 const HEADER_CANDIDATES: Record<string, RegExp> = {
   feature: /^(feature|module|menu|기능명|기능|모듈|서비스|메뉴)$/i,
@@ -13,11 +12,11 @@ const HEADER_CANDIDATES: Record<string, RegExp> = {
 };
 
 function buildKeywordPatterns(
-  domainKeywords: Record<Domain, string[]>,
-): Map<Domain, RegExp> {
-  const map = new Map<Domain, RegExp>();
-  for (const domain of DOMAINS) {
-    const words = domainKeywords[domain];
+  resolved: ResolvedSkill,
+): Map<string, RegExp> {
+  const map = new Map<string, RegExp>();
+  for (const domain of resolved.domainOrder) {
+    const words = resolved.domainKeywords[domain];
     if (words?.length) {
       map.set(domain, new RegExp(words.join("|"), "i"));
     }
@@ -27,13 +26,14 @@ function buildKeywordPatterns(
 
 function inferDomain(
   text: string,
-  patterns: Map<Domain, RegExp>,
-): Domain {
-  for (const domain of DOMAINS) {
+  patterns: Map<string, RegExp>,
+  resolved: ResolvedSkill,
+): string {
+  for (const domain of resolved.domainOrder) {
     const re = patterns.get(domain);
     if (re?.test(text)) return domain;
   }
-  return "Admin";
+  return resolved.fallbackDomain;
 }
 
 function findColumnIndex(headers: string[], pattern: RegExp): number {
@@ -106,9 +106,9 @@ export function buildChecklist(
   rows: string[][],
   sourceSheetName: string,
   headerRowIndex: number,
-  skill: SkillManifest,
+  resolved: ResolvedSkill,
 ): ChecklistItem[] {
-  const patterns = buildKeywordPatterns(skill.domainKeywords);
+  const patterns = buildKeywordPatterns(resolved);
 
   const indices = {
     feature: findColumnIndex(headers, HEADER_CANDIDATES.feature),
@@ -163,7 +163,7 @@ export function buildChecklist(
       : "";
 
     const combinedText = `${feature} ${scenario} ${precondition}`;
-    const domain = inferDomain(combinedText, patterns);
+    const domain = inferDomain(combinedText, patterns, resolved);
 
     checklist.push({
       id: `CL-${String(rowNum).padStart(4, "0")}`,

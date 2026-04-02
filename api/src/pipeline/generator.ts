@@ -1,6 +1,7 @@
-import type { ChecklistItem, Domain, Priority, Severity, TestCase, TcType } from "../types/tc.js";
-import { DOMAINS } from "../types/tc.js";
-import type { SkillManifest, TcTemplate, PriorityRule, SeverityRule } from "../skills/types.js";
+import type { ChecklistItem, Priority, Severity, TestCase, TcType } from "../types/tc.js";
+import { TC_TYPES } from "../types/tc.js";
+import type { TcTemplate } from "../skills/types.js";
+import type { ResolvedSkill, ResolvedPriorityRule, ResolvedSeverityRule } from "../skills/resolved-skill.js";
 
 interface GeneratorConfig {
   ownerDefault: string;
@@ -9,9 +10,9 @@ interface GeneratorConfig {
 }
 
 function determinePriority(
-  domain: Domain,
+  domain: string,
   type: TcType,
-  rules: PriorityRule[],
+  rules: ResolvedPriorityRule[],
 ): Priority {
   for (const rule of rules) {
     if (rule.domain === domain && rule.types.includes(type)) {
@@ -23,9 +24,9 @@ function determinePriority(
 }
 
 function determineSeverity(
-  domain: Domain,
+  domain: string,
   type: TcType,
-  rules: SeverityRule[],
+  rules: ResolvedSeverityRule[],
 ): Severity {
   if (type === "Security") return "S1";
   for (const rule of rules) {
@@ -37,25 +38,24 @@ function determineSeverity(
   return "S3";
 }
 
+function emptyDomainTypeCounts(): Record<TcType, number> {
+  return Object.fromEntries(TC_TYPES.map((t) => [t, 0])) as Record<TcType, number>;
+}
+
 export function generateTestCases(
   checklist: ChecklistItem[],
   config: GeneratorConfig,
-  skill: SkillManifest,
+  resolved: ResolvedSkill,
 ): TestCase[] {
   const testCases: TestCase[] = [];
   let tcCounter = 1;
 
   const domainCounts = Object.fromEntries(
-    DOMAINS.map((d) => [
-      d,
-      Object.fromEntries(
-        ["Functional", "Negative", "Boundary", "Security", "Regression", "Accessibility"].map((t) => [t, 0]),
-      ),
-    ]),
-  ) as Record<Domain, Record<TcType, number>>;
+    resolved.domainOrder.map((d) => [d, emptyDomainTypeCounts()]),
+  ) as Record<string, Record<TcType, number>>;
 
   for (const item of checklist) {
-    const templates = skill.templates[item.domain] ?? [];
+    const templates = resolved.templates[item.domain] ?? [];
     const applicableTemplates = config.maxTcPerRequirement
       ? templates.slice(0, config.maxTcPerRequirement)
       : templates;
@@ -76,8 +76,8 @@ export function generateTestCases(
         Test_Steps: tmpl.steps,
         Test_Data: "",
         Expected_Result: tmpl.expectedResult,
-        Priority: determinePriority(item.domain, tmpl.type, skill.priorityRules),
-        Severity: determineSeverity(item.domain, tmpl.type, skill.severityRules),
+        Priority: determinePriority(item.domain, tmpl.type, resolved.priorityRules),
+        Severity: determineSeverity(item.domain, tmpl.type, resolved.severityRules),
         Type: tmpl.type,
         Environment: config.environmentDefault,
         Owner: config.ownerDefault,
@@ -87,38 +87,40 @@ export function generateTestCases(
         Notes: notes.join("; "),
       });
 
-      domainCounts[item.domain][tmpl.type]++;
+      const dc = domainCounts[item.domain] ?? (domainCounts[item.domain] = emptyDomainTypeCounts());
+      dc[tmpl.type]++;
     }
 
     item.covered = true;
   }
 
-  ensureDomainMinSets(testCases, domainCounts, checklist, config, skill, tcCounter);
+  ensureDomainMinSets(testCases, domainCounts, checklist, config, resolved, tcCounter);
 
   return deduplicateTestCases(testCases);
 }
 
 function ensureDomainMinSets(
   testCases: TestCase[],
-  counts: Record<Domain, Record<TcType, number>>,
+  counts: Record<string, Record<TcType, number>>,
   checklist: ChecklistItem[],
   config: GeneratorConfig,
-  skill: SkillManifest,
+  resolved: ResolvedSkill,
   startId: number,
 ) {
   let tcCounter = startId;
 
-  for (const domain of DOMAINS) {
-    const minSet = skill.domainMinSets[domain];
+  for (const domain of resolved.domainOrder) {
+    const minSet = resolved.domainMinSets[domain];
     if (!minSet) continue;
 
     const representative = checklist.find((c) => c.domain === domain);
     if (!representative) continue;
 
-    const templates: TcTemplate[] = skill.templates[domain] ?? [];
+    const templates: TcTemplate[] = resolved.templates[domain] ?? [];
+    const domainCountsFor = counts[domain] ?? (counts[domain] = emptyDomainTypeCounts());
 
     for (const [type, minCount] of Object.entries(minSet)) {
-      const current = counts[domain][type as TcType];
+      const current = domainCountsFor[type as TcType];
       if (current >= minCount) continue;
 
       const gap = minCount - current;
@@ -137,8 +139,8 @@ function ensureDomainMinSets(
           Test_Steps: tmpl.steps,
           Test_Data: "",
           Expected_Result: tmpl.expectedResult,
-          Priority: determinePriority(domain, tmpl.type, skill.priorityRules),
-          Severity: determineSeverity(domain, tmpl.type, skill.severityRules),
+          Priority: determinePriority(domain, tmpl.type, resolved.priorityRules),
+          Severity: determineSeverity(domain, tmpl.type, resolved.severityRules),
           Type: tmpl.type,
           Environment: config.environmentDefault,
           Owner: config.ownerDefault,

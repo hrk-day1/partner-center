@@ -1,8 +1,7 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import type { ChecklistItem, Domain, TestCase } from "../types/tc.js";
-import { DOMAINS, TC_TYPES } from "../types/tc.js";
-import type { SkillManifest } from "../skills/types.js";
+import type { ChecklistItem, TestCase } from "../types/tc.js";
+import { TC_TYPES } from "../types/tc.js";
 import { generateJson } from "../llm/gemini-client.js";
 import { buildGeneratorPrompt } from "../llm/prompts/generator-prompt.js";
 import { generateTestCases } from "../pipeline/generator.js";
@@ -33,8 +32,8 @@ const TestCaseSchema = z.array(
   }),
 );
 
-function groupByDomain(items: ChecklistItem[]): Map<Domain, ChecklistItem[]> {
-  const groups = new Map<Domain, ChecklistItem[]>();
+function groupByDomain(items: ChecklistItem[]): Map<string, ChecklistItem[]> {
+  const groups = new Map<string, ChecklistItem[]>();
   for (const item of items) {
     const list = groups.get(item.domain) ?? [];
     list.push(item);
@@ -84,7 +83,7 @@ export class LlmGeneratorAgent implements Agent<GeneratorInput, TestCase[]> {
 
           for (const chunk of chunks) {
             const prompt = buildGeneratorPrompt(
-              chunk, domain, input.skill, input.config, tcCounter,
+              chunk, domain, input.resolvedSkill, input.config, tcCounter,
             );
 
             const { data: tcs } = await generateJson(prompt, TestCaseSchema);
@@ -139,7 +138,7 @@ export class LlmGeneratorAgent implements Agent<GeneratorInput, TestCase[]> {
       });
 
       try {
-        const testCases = generateTestCases(input.checklist, input.config, input.skill);
+        const testCases = generateTestCases(input.checklist, input.config, input.resolvedSkill);
 
         bus.emit(config.pipelineId, {
           agentId, agentType: "generator", status: "completed", progress: 100,

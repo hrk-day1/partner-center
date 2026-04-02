@@ -1,15 +1,14 @@
-import type { SkillManifest } from "../../skills/types.js";
-import { DOMAINS } from "../../types/tc.js";
+import type { ResolvedSkill } from "../../skills/resolved-skill.js";
 
 export function buildPlanPrompt(
   headers: string[],
   sampleRows: string[][],
   sourceSheetName: string,
-  skill: SkillManifest,
+  resolved: ResolvedSkill,
 ): string {
-  const domainKeywordsSection = DOMAINS.map(
-    (d) => `  - ${d}: ${skill.domainKeywords[d].join(", ")}`,
-  ).join("\n");
+  const domainKeywordsSection = resolved.domainOrder
+    .map((d) => `  - ${d}: ${(resolved.domainKeywords[d] ?? []).join(", ")}`)
+    .join("\n");
 
   const rowsPreview = sampleRows
     .slice(0, 30)
@@ -20,7 +19,7 @@ export function buildPlanPrompt(
 
 ## 언어 규칙
 - description, feature 등 자연어 필드는 **반드시 한국어**로 작성하세요.
-- 필드명(id, requirementId 등)과 고정 enum(Auth, Payment 등)은 영문 그대로 유지합니다.
+- 필드명(id, requirementId 등)과 domain 값(아래 허용 id)은 영문 slug로 유지합니다.
 
 ## 작업
 1. 컬럼 중 기능명, 분류(대분류/중분류/소분류), 요구사항 ID, 시나리오/설명, 사전조건에 해당하는 열을 식별하세요.
@@ -31,7 +30,7 @@ export function buildPlanPrompt(
 ## 도메인 분류 키워드
 ${domainKeywordsSection}
 
-키워드가 일치하지 않으면 "Admin"으로 기본 분류합니다.
+키워드가 일치하지 않으면 "${resolved.fallbackDomain}"(기본 도메인)으로 분류합니다.
 
 ## 시트: "${sourceSheetName}"
 
@@ -46,7 +45,7 @@ ${rowsPreview}
 - id: string ("CL-XXXX" 형식, XXXX는 행 번호 zero-padded)
 - requirementId: string
 - feature: string (한국어)
-- domain: ${JSON.stringify([...DOMAINS])} 중 하나
+- domain: ${JSON.stringify([...resolved.domainOrder])} 중 정확히 하나
 - description: string (테스트 가능한 한국어 시나리오 문장)
 - sourceRow: number (원본 시트 기준 1-based 행 번호, 헤더 오프셋 포함)
 - sourceSheet: "${sourceSheetName}"

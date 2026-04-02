@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
 import type { ChecklistItem } from "../types/tc.js";
-import type { SkillManifest } from "../skills/types.js";
+import type { ResolvedSkill } from "../skills/resolved-skill.js";
 import { detectHeaderAndData, buildChecklist } from "../pipeline/plan.js";
 import type { Agent } from "./registry.js";
 import type { AgentResult, SubAgentConfig } from "./types.js";
@@ -9,7 +9,7 @@ import type { eventBus } from "./event-bus.js";
 export interface PlanInput {
   raw: string[][];
   sourceSheetName: string;
-  skill: SkillManifest;
+  resolvedSkill: ResolvedSkill;
 }
 
 export class DeterministicPlanAgent implements Agent<PlanInput, ChecklistItem[]> {
@@ -37,7 +37,7 @@ export class DeterministicPlanAgent implements Agent<PlanInput, ChecklistItem[]>
       });
 
       const checklist = buildChecklist(
-        headers, dataRows, input.sourceSheetName, headerRowIndex, input.skill,
+        headers, dataRows, input.sourceSheetName, headerRowIndex, input.resolvedSkill,
       );
 
       bus.emit(config.pipelineId, {

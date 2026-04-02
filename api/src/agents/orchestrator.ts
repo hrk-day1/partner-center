@@ -4,7 +4,11 @@ import type { ChecklistItem, TestCase } from "../types/tc.js";
 import type { EvaluationResult } from "../types/pipeline.js";
 import { parseSpreadsheetUrl, findSheetName, readSheetValues } from "../sheets/reader.js";
 import { createSheet, writeHeaders, writeTestCases } from "../sheets/writer.js";
+import { env } from "../config/env.js";
 import { getSkill } from "../skills/registry.js";
+import { skillManifestToResolved } from "../skills/resolved-skill.js";
+import { detectHeaderAndData } from "../pipeline/plan.js";
+import { runTaxonomyPhase } from "./llm-taxonomy-agent.js";
 import { eventBus } from "./event-bus.js";
 import { getAgent } from "./registry.js";
 import { createExecution, updateAgentState, completeExecution } from "./store.js";
@@ -19,7 +23,7 @@ function failedPipelineResult(targetSheetName: string, message: string): Pipelin
     rounds: 0,
     stats: {
       totalTCs: 0,
-      domainDistribution: { Auth: 0, Payment: 0, Content: 0, Membership: 0, Community: 0, Creator: 0, Admin: 0 },
+      domainDistribution: {},
       priorityDistribution: { P0: 0, P1: 0, P2: 0 },
       typeDistribution: { Functional: 0, Negative: 0, Boundary: 0, Regression: 0, Accessibility: 0, Security: 0 },
       coverageGaps: [`PIPELINE_ERROR: ${message}`],
@@ -47,14 +51,16 @@ export async function orchestrate(
 ): Promise<PipelineResult & { pipelineId: string }> {
   const pipelineId = options?.pipelineId ?? crypto.randomUUID().slice(0, 8);
   const impl: Implementation = config.implementation ?? "llm";
-  const skill = getSkill(config.skillId);
+  const manifest = getSkill(config.skillId);
 
   createExecution(pipelineId, config as unknown as Record<string, unknown>);
 
-  console.log(`[orchestrator] pipeline=${pipelineId} impl=${impl} skill=${skill.id}`);
+  console.log(
+    `[orchestrator] pipeline=${pipelineId} impl=${impl} skill=${manifest.id} domainMode=${config.domainMode ?? "preset"}`,
+  );
 
   try {
-    return await runOrchestrationBody(pipelineId, config, impl, skill);
+    return await runOrchestrationBody(pipelineId, config, impl, manifest);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(`[orchestrator] pipeline=${pipelineId} failed:`, err);
@@ -69,7 +75,7 @@ async function runOrchestrationBody(
   pipelineId: string,
   config: PipelineConfig,
   impl: Implementation,
-  skill: ReturnType<typeof getSkill>,
+  manifest: ReturnType<typeof getSkill>,
 ): Promise<PipelineResult & { pipelineId: string }> {
   const { spreadsheetId, gid } = parseSpreadsheetUrl(config.spreadsheetUrl);
   const sourceSheetName = await findSheetName(spreadsheetId, {
@@ -82,12 +88,30 @@ async function runOrchestrationBody(
     throw new Error(`Source sheet '${sourceSheetName}' has no data rows`);
   }
 
+  let resolved = skillManifestToResolved(manifest);
+  if (config.domainMode === "discovered") {
+    if (!env.geminiApiKey) {
+      throw new Error("domainMode 'discovered' requires GEMINI_API_KEY in environment");
+    }
+    const { headers, dataRows } = detectHeaderAndData(raw);
+    resolved = await runTaxonomyPhase(
+      {
+        headers,
+        sampleRows: dataRows.slice(0, 30),
+        sourceSheetName,
+        baseSkill: manifest,
+      },
+      eventBus,
+      pipelineId,
+    );
+  }
+
   // --- Plan ---
   const planAgent = getAgent<PlanInput, ChecklistItem[]>("plan", impl);
   const agentConfig = { pipelineId, skillId: config.skillId, domainScope: config.domainScope, implementation: impl };
 
   const planResult = await planAgent.run(
-    { raw, sourceSheetName, skill },
+    { raw, sourceSheetName, resolvedSkill: resolved },
     eventBus,
     agentConfig,
   );
@@ -121,7 +145,7 @@ async function runOrchestrationBody(
   };
 
   const genResult = await genAgent.run(
-    { checklist: scopedChecklist, config: genConfig, skill },
+    { checklist: scopedChecklist, config: genConfig, resolvedSkill: resolved },
     eventBus,
     agentConfig,
   );
@@ -143,7 +167,7 @@ async function runOrchestrationBody(
   const evalInput: EvaluatorInput = {
     checklist: scopedChecklist,
     testCases: allTestCases,
-    skill,
+    resolvedSkill: resolved,
     config: { ownerDefault: config.ownerDefault, environmentDefault: config.environmentDefault },
   };
 
@@ -169,7 +193,7 @@ async function runOrchestrationBody(
     console.log(`[orchestrator] fallback round ${round}: ${evalResult.data.uncoveredItems.length} uncovered`);
 
     const extraResult = await genAgent.run(
-      { checklist: evalResult.data.uncoveredItems, config: genConfig, skill },
+      { checklist: evalResult.data.uncoveredItems, config: genConfig, resolvedSkill: resolved },
       eventBus,
       agentConfig,
     );
@@ -179,7 +203,7 @@ async function runOrchestrationBody(
     }
 
     evalResult = await evalAgent.run(
-      { checklist: scopedChecklist, testCases: allTestCases, skill, config: evalInput.config },
+      { checklist: scopedChecklist, testCases: allTestCases, resolvedSkill: resolved, config: evalInput.config },
       eventBus,
       agentConfig,
     );

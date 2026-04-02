@@ -3,16 +3,6 @@ import { useTranslation } from "react-i18next";
 import { apiGet, apiPost } from "@/shared/lib/api-client";
 import { subscribeToPipelineEvents, type AgentEvent } from "@/shared/lib/sse-client";
 
-interface DomainDistribution {
-  Auth: number;
-  Payment: number;
-  Content: number;
-  Membership: number;
-  Community: number;
-  Creator: number;
-  Admin: number;
-}
-
 interface PriorityDistribution {
   P0: number;
   P1: number;
@@ -35,7 +25,7 @@ interface EvaluationIssue {
 
 interface PipelineStats {
   totalTCs: number;
-  domainDistribution: DomainDistribution;
+  domainDistribution: Record<string, number>;
   priorityDistribution: PriorityDistribution;
   typeDistribution: TypeDistribution;
   coverageGaps: string[];
@@ -53,6 +43,7 @@ export interface PipelineResult {
 export interface PipelineRequest {
   spreadsheetUrl: string;
   targetSheetName: string;
+  domainMode?: "preset" | "discovered";
   domainScope: string;
   ownerDefault: string;
   environmentDefault: string;
@@ -69,7 +60,7 @@ export interface SkillSummary {
 
 export interface AgentState {
   agentId: string;
-  agentType: "plan" | "generator" | "evaluator";
+  agentType: "taxonomy" | "plan" | "generator" | "evaluator";
   status: "pending" | "running" | "completed" | "failed";
   progress: number;
   message: string;
@@ -131,6 +122,12 @@ export function usePipeline() {
     (data: PipelineResult) => {
       clearPoll();
       setResult(data);
+      if (!data.success) {
+        const gaps = data.stats?.coverageGaps ?? [];
+        const issues = data.evaluationIssues ?? [];
+        const msg = issues[0]?.message ?? gaps[0] ?? t("error.unknown");
+        setError(msg);
+      }
       setLoading(false);
       setStatusMessage(null);
       if (unsubRef.current) {
@@ -138,7 +135,7 @@ export function usePipeline() {
         unsubRef.current = null;
       }
     },
-    [clearPoll],
+    [clearPoll, t],
   );
 
   const run = useCallback(
@@ -177,9 +174,8 @@ export function usePipeline() {
             }
             try {
               const res = await fetch(`/api/pipeline/run/${pipelineId}/result`);
-              if (res.ok && res.status === 200) {
-                const data = (await res.json()) as PipelineResult;
-                finishPipeline(data);
+              if (res.status === 200) {
+                finishPipeline((await res.json()) as PipelineResult);
               }
             } catch {
               // keep polling
@@ -195,13 +191,13 @@ export function usePipeline() {
           },
           (payload) => {
             clearPoll();
-            if (payload && typeof payload === "object" && "sheetName" in (payload as object)) {
+            if (payload && typeof payload === "object" && "success" in (payload as object)) {
               finishPipeline(payload as PipelineResult);
             } else {
               void (async () => {
                 try {
                   const res = await fetch(`/api/pipeline/run/${pipelineId}/result`);
-                  if (res.ok) {
+                  if (res.status === 200) {
                     finishPipeline((await res.json()) as PipelineResult);
                   } else {
                     setLoading(false);

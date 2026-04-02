@@ -1,8 +1,9 @@
-import type { PipelineResult } from "./pipeline.js";
+import type { DomainMode, PipelineResult } from "./pipeline.js";
 
 export interface ForkVariant {
   label: string;
   skillId: string;
+  domainMode?: DomainMode;
   domainScope: string;
   maxFallbackRounds: number;
 }

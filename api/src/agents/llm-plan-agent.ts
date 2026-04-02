@@ -1,8 +1,6 @@
 import crypto from "node:crypto";
 import { z } from "zod";
-import type { ChecklistItem, Domain } from "../types/tc.js";
-import { DOMAINS } from "../types/tc.js";
-import type { SkillManifest } from "../skills/types.js";
+import type { ChecklistItem } from "../types/tc.js";
 import { generateJson } from "../llm/gemini-client.js";
 import { buildPlanPrompt } from "../llm/prompts/plan-prompt.js";
 import { detectHeaderAndData, buildChecklist } from "../pipeline/plan.js";
@@ -11,18 +9,27 @@ import type { AgentResult, SubAgentConfig } from "./types.js";
 import type { eventBus } from "./event-bus.js";
 import type { PlanInput } from "./deterministic-plan-agent.js";
 
-const ChecklistItemSchema = z.array(
-  z.object({
-    id: z.string(),
-    requirementId: z.string(),
-    feature: z.string(),
-    domain: z.enum(DOMAINS as unknown as [string, ...string[]]) as z.ZodType<Domain>,
-    description: z.string(),
-    sourceRow: z.number(),
-    sourceSheet: z.string(),
-    covered: z.boolean(),
-  }),
-);
+function checklistItemSchemaForDomains(allowed: readonly string[]) {
+  if (allowed.length === 0) {
+    throw new Error("resolvedSkill.domainOrder must not be empty");
+  }
+  const domainZod =
+    allowed.length === 1
+      ? z.literal(allowed[0])
+      : z.enum(allowed as [string, ...string[]]);
+  return z.array(
+    z.object({
+      id: z.string(),
+      requirementId: z.string(),
+      feature: z.string(),
+      domain: domainZod,
+      description: z.string(),
+      sourceRow: z.number(),
+      sourceSheet: z.string(),
+      covered: z.boolean(),
+    }),
+  );
+}
 
 export class LlmPlanAgent implements Agent<PlanInput, ChecklistItem[]> {
   readonly type = "plan" as const;
@@ -48,14 +55,15 @@ export class LlmPlanAgent implements Agent<PlanInput, ChecklistItem[]> {
         message: "LLM 프롬프트 구성 중...", timestamp: new Date().toISOString(),
       });
 
-      const prompt = buildPlanPrompt(headers, dataRows, input.sourceSheetName, input.skill);
+      const prompt = buildPlanPrompt(headers, dataRows, input.sourceSheetName, input.resolvedSkill);
 
       bus.emit(config.pipelineId, {
         agentId, agentType: "plan", status: "running", progress: 50,
         message: "Gemini API 호출 중...", timestamp: new Date().toISOString(),
       });
 
-      const { data: checklist, usage } = await generateJson(prompt, ChecklistItemSchema);
+      const schema = checklistItemSchemaForDomains(input.resolvedSkill.domainOrder);
+      const { data: checklist, usage } = await generateJson(prompt, schema);
 
       bus.emit(config.pipelineId, {
         agentId, agentType: "plan", status: "completed", progress: 100,
@@ -80,7 +88,7 @@ export class LlmPlanAgent implements Agent<PlanInput, ChecklistItem[]> {
       try {
         const { headers, dataRows, headerRowIndex } = detectHeaderAndData(input.raw);
         const checklist = buildChecklist(
-          headers, dataRows, input.sourceSheetName, headerRowIndex, input.skill,
+          headers, dataRows, input.sourceSheetName, headerRowIndex, input.resolvedSkill,
         );
 
         bus.emit(config.pipelineId, {

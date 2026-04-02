@@ -1,7 +1,7 @@
-import type { ChecklistItem, Domain, TcType, TestCase } from "../types/tc.js";
-import { DOMAINS, TC_TYPES } from "../types/tc.js";
+import type { ChecklistItem, TcType, TestCase } from "../types/tc.js";
+import { TC_TYPES } from "../types/tc.js";
 import type { EvaluationIssue, EvaluationResult, PipelineStats } from "../types/pipeline.js";
-import type { SkillManifest } from "../skills/types.js";
+import type { ResolvedSkill } from "../skills/resolved-skill.js";
 
 const VALID_PRIORITIES = new Set(["P0", "P1", "P2"]);
 const VALID_SEVERITIES = new Set(["S1", "S2", "S3"]);
@@ -10,13 +10,13 @@ const VALID_TYPES = new Set<string>(TC_TYPES);
 export function evaluate(
   checklist: ChecklistItem[],
   testCases: TestCase[],
-  skill: SkillManifest,
+  resolved: ResolvedSkill,
 ): EvaluationResult {
   const issues: EvaluationIssue[] = [];
 
   validateSchema(testCases, issues);
   validateRequiredFields(testCases, issues);
-  const domainDist = validateDomainMinSets(testCases, issues, skill);
+  const domainDist = validateDomainMinSets(testCases, issues, resolved);
   const uncoveredItems = validateCoverage(checklist, testCases, issues);
   validateDuplicates(testCases, issues);
 
@@ -72,12 +72,10 @@ function emptyTypeCounts(): Record<TcType, number> {
   return { Functional: 0, Negative: 0, Boundary: 0, Security: 0, Regression: 0, Accessibility: 0 };
 }
 
-function buildKeywordPatterns(
-  domainKeywords: Record<Domain, string[]>,
-): Map<Domain, RegExp> {
-  const map = new Map<Domain, RegExp>();
-  for (const domain of DOMAINS) {
-    const words = domainKeywords[domain];
+function buildKeywordPatterns(resolved: ResolvedSkill): Map<string, RegExp> {
+  const map = new Map<string, RegExp>();
+  for (const domain of resolved.domainOrder) {
+    const words = resolved.domainKeywords[domain];
     if (words?.length) {
       map.set(domain, new RegExp(words.join("|"), "i"));
     }
@@ -87,41 +85,48 @@ function buildKeywordPatterns(
 
 function inferDomainFromTc(
   tc: TestCase,
-  patterns: Map<Domain, RegExp>,
-): Domain {
+  patterns: Map<string, RegExp>,
+  resolved: ResolvedSkill,
+): string {
   const text = `${tc.Feature} ${tc.Scenario}`;
-  for (const domain of DOMAINS) {
+  for (const domain of resolved.domainOrder) {
     const re = patterns.get(domain);
     if (re?.test(text)) return domain;
   }
-  return "Admin";
+  return resolved.fallbackDomain;
 }
 
 function validateDomainMinSets(
   testCases: TestCase[],
   issues: EvaluationIssue[],
-  skill: SkillManifest,
-): Record<Domain, number> {
-  const patterns = buildKeywordPatterns(skill.domainKeywords);
-  const domainDist = Object.fromEntries(DOMAINS.map((d) => [d, 0])) as Record<Domain, number>;
-  const counts = Object.fromEntries(DOMAINS.map((d) => [d, emptyTypeCounts()])) as Record<Domain, Record<TcType, number>>;
+  resolved: ResolvedSkill,
+): Record<string, number> {
+  const patterns = buildKeywordPatterns(resolved);
+  const domainDist: Record<string, number> = Object.fromEntries(
+    resolved.domainOrder.map((d) => [d, 0]),
+  );
+  const counts: Record<string, Record<TcType, number>> = Object.fromEntries(
+    resolved.domainOrder.map((d) => [d, emptyTypeCounts()]),
+  );
 
   for (const tc of testCases) {
-    const domain = inferDomainFromTc(tc, patterns);
-    domainDist[domain]++;
+    const domain = inferDomainFromTc(tc, patterns, resolved);
+    domainDist[domain] = (domainDist[domain] ?? 0) + 1;
+    if (!counts[domain]) counts[domain] = emptyTypeCounts();
     counts[domain][tc.Type]++;
   }
 
-  for (const [domain, minSet] of Object.entries(skill.domainMinSets)) {
-    const d = domain as Domain;
-    if (domainDist[d] === 0) continue;
+  for (const [domain, minSet] of Object.entries(resolved.domainMinSets)) {
+    if ((domainDist[domain] ?? 0) === 0) continue;
+
+    const c = counts[domain] ?? emptyTypeCounts();
 
     for (const [type, minCount] of Object.entries(minSet)) {
-      if (counts[d][type as TcType] < minCount) {
+      if (c[type as TcType] < minCount) {
         issues.push({
           type: "domain_min",
-          message: `${d} 도메인: ${type} TC가 ${counts[d][type as TcType]}개로 최소 ${minCount}개 미달`,
-          details: { domain: d, type, current: counts[d][type as TcType], required: minCount },
+          message: `${domain} 도메인: ${type} TC가 ${c[type as TcType]}개로 최소 ${minCount}개 미달`,
+          details: { domain, type, current: c[type as TcType], required: minCount },
         });
       }
     }
@@ -168,7 +173,7 @@ function validateDuplicates(testCases: TestCase[], issues: EvaluationIssue[]) {
 
 function buildStats(
   testCases: TestCase[],
-  domainDist: Record<Domain, number>,
+  domainDist: Record<string, number>,
   checklist: ChecklistItem[],
 ): PipelineStats {
   const priorityDist = { P0: 0, P1: 0, P2: 0 };

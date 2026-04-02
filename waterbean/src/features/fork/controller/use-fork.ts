@@ -7,23 +7,14 @@ import type { AgentState } from "@/features/pipeline/controller/use-pipeline";
 interface ForkVariant {
   label: string;
   skillId: string;
+  domainMode?: "preset" | "discovered";
   domainScope: string;
   maxFallbackRounds: number;
 }
 
-interface DomainDistribution {
-  Auth: number;
-  Payment: number;
-  Content: number;
-  Membership: number;
-  Community: number;
-  Creator: number;
-  Admin: number;
-}
-
 interface PipelineStats {
   totalTCs: number;
-  domainDistribution: DomainDistribution;
+  domainDistribution: Record<string, number>;
   priorityDistribution: { P0: number; P1: number; P2: number };
   typeDistribution: Record<string, number>;
   coverageGaps: string[];
@@ -151,7 +142,7 @@ export function useFork() {
             }
             try {
               const res = await fetch(`/api/pipeline/fork/${forkId}/result`);
-              if (res.ok && res.status === 200) {
+              if (res.status === 200) {
                 finishFork((await res.json()) as ForkResult);
               }
             } catch {
@@ -174,7 +165,7 @@ export function useFork() {
               void (async () => {
                 try {
                   const res = await fetch(`/api/pipeline/fork/${forkId}/result`);
-                  if (res.ok) {
+                  if (res.status === 200) {
                     finishFork((await res.json()) as ForkResult);
                   } else {
                     setLoading(false);
