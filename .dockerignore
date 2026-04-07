@@ -1,0 +1,15 @@
+**/node_modules
+.git
+.gitignore
+.cursor
+**/.env
+**/.env.*
+!api/.env.example
+!waterbean/.env.example
+fcws-sheet.json
+sa.json
+api/dist
+waterbean/dist
+web/dist
+*.md
+LICENSE

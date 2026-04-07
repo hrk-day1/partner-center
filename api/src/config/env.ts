@@ -2,7 +2,9 @@ import dotenv from 'dotenv';
 import path from 'node:path';
 import type { DomainMinSetFillMode, EvaluatorGateMode } from '../types/pipeline.js';
 
-dotenv.config({ path: path.resolve(import.meta.dirname, '../../.env') });
+const apiEnvPath = path.resolve(import.meta.dirname, '../../.env');
+const dotenvPath = (process.env.DOTENV_CONFIG_PATH ?? '').trim() || apiEnvPath;
+dotenv.config({ path: dotenvPath });
 
 function parseDomainMinSetFill(raw: string | undefined): DomainMinSetFillMode | undefined {
   if (!raw?.trim()) return undefined;

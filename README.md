@@ -58,7 +58,8 @@ cp api/.env.example api/.env
 
 | 변수                                        | 설명                                                                                                                                              | 기본값                            |
 | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
-| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`           | 서비스 계정 키 JSON 경로 (api/ 기준 상대경로)                                                                                                     | `../sa.json`                      |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`           | 서비스 계정 키 JSON 경로 (api/ 기준 상대경로 또는 절대경로, Cloud Run에서는 Secret 마운트 경로 권장)                                             | `../sa.json`                      |
+| `DOTENV_CONFIG_PATH`                        | 로드할 env 파일 경로 (Secret Manager 파일 마운트 등). 미설정 시 `api/.env`                                                                       | —                                 |
 | `API_PORT`                                  | API 서버 리슨 포트                                                                                                                                | `4000`                            |
 | `GEMINI_API_KEY`                            | Gemini API 키                                                                                                                                     | —                                 |
 | `GEMINI_MODEL`                              | 사용할 Gemini 모델                                                                                                                                | `gemini-2.5-flash-lite`           |
@@ -115,6 +116,71 @@ npm run build   # 전체 워크스페이스 빌드
 npm run lint    # 전체 워크스페이스 린트
 npm run test -w api   # API: spec-risk 등 node:test 스위트
 ```
+
+### Docker 및 Cloud Run (프로덕션)
+
+루트 [Dockerfile](Dockerfile)은 **api**와 **waterbean** 빌드 산출물을 한 이미지에 넣고, Express가 동일 포트에서 `/health`, `/api/pipeline/*`(Waterbean·프록시와 동일 계약), 정적 UI를 제공합니다. 로컬 개발 시 Vite는 `/api`를 제거한 뒤 API로 넘기므로, API에는 여전히 `/pipeline/*`로도 접근할 수 있습니다.
+
+**로컬 Docker 실행 (시크릿 마운트)**
+
+이미지 안에는 `api/.env`와 서비스 계정 JSON이 없습니다. `docker run`만 하면 Waterbean 정적 페이지는 열리지만 **Gemini·Sheets가 필요한 API는 동작하지 않습니다.** 로컬에서 Cloud Run과 비슷하게 쓰려면 env 파일과 SA 키 파일을 **볼륨으로 마운트**하고, 컨테이너 안 경로를 알려줍니다.
+
+- `DOTENV_CONFIG_PATH`: 마운트한 env 파일 경로 (예: `/run/secrets/app.env`).
+- `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`: 마운트한 JSON의 **절대 경로** (예: `/secrets/fcws-sheet.json`). 마운트한 env 안에 이미 적혀 있으면 `-e`로 다시 줄 필요는 없습니다.
+- **포트**: 로컬 `api/.env`에 `API_PORT=4000`이 있으면 컨테이너가 4000에서만 열려 `-p 8080:8080`과 어긋납니다. `-e API_PORT=8080`(또는 `-e PORT=8080`)으로 맞추거나, Docker용 env 파일에서 `API_PORT=8080`으로 두세요. (`dotenv`는 이미 설정된 환경 변수를 덮어쓰지 않으므로 `-e`가 우선합니다.)
+
+리포지토리 루트에서 실행한다고 가정합니다. `fcws-sheet.json`은 프로젝트 루트에 두거나, `-v` 왼쪽 경로를 실제 키 파일 위치로 바꿉니다.
+
+```bash
+docker build -t partner-center:test .
+
+docker run --rm -p 8080:8080 \
+  -v "$(pwd)/api/.env:/run/secrets/app.env:ro" \
+  -v "$(pwd)/fcws-sheet.json:/secrets/fcws-sheet.json:ro" \
+  -e DOTENV_CONFIG_PATH=/run/secrets/app.env \
+  -e GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/secrets/fcws-sheet.json \
+  -e API_PORT=8080 \
+  partner-center:test
+```
+
+`api/.env`의 `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`가 로컬 상대경로(`../sa.json` 등)이면, 위처럼 `-e GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/secrets/fcws-sheet.json`으로 컨테이너 안 경로를 덮어쓰는 편이 안전합니다. 마운트한 JSON 경로와 반드시 일치시키세요.
+
+**이미지 빌드**
+
+```bash
+docker build -t "${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/partner-center:$(date -u +%Y%m%d%H%M%S)" .
+```
+
+**Secret Manager (예시)**
+
+- `waterbean-secret-key`: `api/.env`와 동일한 키·값을 담은 **파일** 시크릿(또는 여러 줄 env).
+- 서비스 계정 JSON: Sheets API용 키는 **별도 시크릿**으로 두고 파일로 마운트하는 것을 권장합니다.
+
+컨테이너에서 env 파일을 읽으려면 `DOTENV_CONFIG_PATH`를 마운트 경로로 지정하고, `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`에는 해당 JSON 파일의 **절대 경로**(예: `/secrets/fcws-sheet.json`)를 넣습니다.
+
+**Cloud Run 배포 (예시)**
+
+플레이스홀더(`REGION`, `PROJECT_ID`, `REPOSITORY`, 서비스 이름, SA JSON 시크릿 이름)는 프로젝트에 맞게 바꿉니다.
+
+```bash
+TAG=$(date -u +%Y%m%d%H%M%S)
+IMAGE="${REGION}-docker.pkg.dev/${PROJECT_ID}/${REPOSITORY}/partner-center:${TAG}"
+
+docker push "${IMAGE}"   # 또는 Cloud Build에서 빌드 후 동일 태그로 푸시
+
+gcloud run deploy partner-center \
+  --image "${IMAGE}" \
+  --region "${REGION}" \
+  --port 8080 \
+  --set-env-vars "DOTENV_CONFIG_PATH=/run/secrets/app.env,GOOGLE_SERVICE_ACCOUNT_KEY_PATH=/secrets/fcws-sheet.json" \
+  --set-secrets "/run/secrets/app.env=waterbean-secret-key:latest,/secrets/fcws-sheet.json=YOUR_SA_JSON_SECRET:latest"
+```
+
+`GOOGLE_SERVICE_ACCOUNT_KEY_PATH`는 `app.env` 안에 절대 경로로 두고, 위 `--set-env-vars`에서 생략해도 됩니다.
+
+Cloud Run은 **`PORT`**를 자동 설정하며, **`GOOGLE_CLOUD_PROJECT`** 등 식별용 변수도 런타임에 제공됩니다. 앱은 `PORT`(또는 `API_PORT`)로 리슨합니다. 헬스 체크 URL은 `GET /health`입니다.
+
+Private npm 레지스트리(`.npmrc`)를 쓰는 경우, 이미지 빌드 환경에 인증(예: `NODE_AUTH_TOKEN`)을 주입해야 할 수 있습니다.
 
 ## 시스템 구성도
 
