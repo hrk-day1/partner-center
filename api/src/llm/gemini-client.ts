@@ -304,15 +304,19 @@ function normalizeArrayStringElements(parsed: unknown): unknown {
 
 /**
  * Zod 스키마가 string을 기대하는 위치에 LLM이 배열 또는 객체를 넣은 경우 문자열로 변환한다.
- * - 배열 → 원소를 줄바꿈("\n")으로 join
- * - 객체 → "key: value" 형태로 줄바꿈 join
+ * - (coercePrimitiveStringArrays) 원시값만 있는 비어 있지 않은 배열 → 줄바꿈("\n") join
+ * - 빈 배열 [] → 항상 배열 유지 (newDomains 등)
+ * - 객체 → "key: value" 형태로 줄바꿈 join (모든 값이 원시일 때)
  * 재귀적으로 중첩 객체/배열에도 적용한다.
  */
-function coerceNonStringFieldsToString(data: unknown): unknown {
+function coerceNonStringFieldsToString(
+  data: unknown,
+  coercePrimitiveStringArrays: boolean,
+): unknown {
   if (data === null || data === undefined) return data;
 
   if (Array.isArray(data)) {
-    return data.map((item) => coerceNonStringFieldsToString(item));
+    return data.map((item) => coerceNonStringFieldsToString(item, coercePrimitiveStringArrays));
   }
 
   if (typeof data === "object") {
@@ -324,9 +328,14 @@ function coerceNonStringFieldsToString(data: unknown): unknown {
           (v) => typeof v === "object" && v !== null && !Array.isArray(v),
         );
         if (hasObject) {
-          result[key] = value.map((item) => coerceNonStringFieldsToString(item));
+          result[key] = value.map((item) =>
+            coerceNonStringFieldsToString(item, coercePrimitiveStringArrays),
+          );
+        } else if (coercePrimitiveStringArrays) {
+          result[key] =
+            value.length === 0 ? [] : value.map((v) => String(v)).join("\n");
         } else {
-          result[key] = value.map((v) => String(v)).join("\n");
+          result[key] = value;
         }
       } else if (typeof value === "object" && value !== null) {
         const inner = value as Record<string, unknown>;
@@ -338,7 +347,7 @@ function coerceNonStringFieldsToString(data: unknown): unknown {
             .map(([k, v]) => `${k}: ${String(v)}`)
             .join("\n");
         } else {
-          result[key] = coerceNonStringFieldsToString(value);
+          result[key] = coerceNonStringFieldsToString(value, coercePrimitiveStringArrays);
         }
       } else {
         result[key] = value;
@@ -350,10 +359,19 @@ function coerceNonStringFieldsToString(data: unknown): unknown {
   return data;
 }
 
-function normalizeLlmParsedJson(parsed: unknown): unknown {
+function normalizeLlmParsedJson(
+  parsed: unknown,
+  coercePrimitiveStringArrays: boolean,
+): unknown {
   const indexed = normalizeIndexedObject(parsed);
   const stringElements = normalizeArrayStringElements(indexed);
-  return coerceNonStringFieldsToString(stringElements);
+  return coerceNonStringFieldsToString(stringElements, coercePrimitiveStringArrays);
+}
+
+/** `generateJson` 옵션 (configOverrides와 별도). */
+export interface GenerateJsonOptions {
+  /** 기본 true. false면 string[]·빈 배열을 문자열로 합치지 않음 (taxonomy hybrid 등). */
+  coercePrimitiveStringArrays?: boolean;
 }
 
 /** How we recovered when strict `JSON.parse` failed (logged for debugging). */
@@ -390,7 +408,10 @@ export async function generateJson<T>(
   prompt: string,
   schema: ZodSchema<T>,
   configOverrides?: Partial<GenerationConfig>,
+  options?: GenerateJsonOptions,
 ): Promise<LlmResponse<T>> {
+  const coercePrimitiveStringArrays = options?.coercePrimitiveStringArrays ?? true;
+
   const config = buildConfig({
     temperature: 0.3,
     ...configOverrides,
@@ -405,7 +426,7 @@ export async function generateJson<T>(
     if (fallback) {
       console.warn(`[llm] primary JSON used ${fallback} fallback`);
     }
-    firstParsed = normalizeLlmParsedJson(value);
+    firstParsed = normalizeLlmParsedJson(value, coercePrimitiveStringArrays);
   } catch (parseErr) {
     logLlmJsonFailure("generateJson JSON.parse (primary)", text, jsonStr, parseErr);
     throw new LlmJsonParseError(
@@ -449,7 +470,7 @@ export async function generateJson<T>(
     if (fallback) {
       console.warn(`[llm] repair JSON used ${fallback} fallback`);
     }
-    secondParsed = normalizeLlmParsedJson(value);
+    secondParsed = normalizeLlmParsedJson(value, coercePrimitiveStringArrays);
   } catch (parseErr) {
     logLlmJsonFailure("generateJson JSON.parse (repair)", repair.text, repairJson, parseErr);
     throw new LlmJsonParseError(

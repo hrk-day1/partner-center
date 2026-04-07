@@ -119,7 +119,9 @@ async function generateDomainDetailOnce(
     domainOrder,
     summary,
   );
-  const { data, usage } = await generateJson(prompt, TaxonomyDomainDetailResponseSchema, jsonGenOverrides);
+  const { data, usage } = await generateJson(prompt, TaxonomyDomainDetailResponseSchema, jsonGenOverrides, {
+    coercePrimitiveStringArrays: false,
+  });
   if (data.domain.id !== domainId) {
     throw new Error(`Taxonomy domain detail id mismatch: expected "${domainId}", got "${data.domain.id}"`);
   }
@@ -199,7 +201,12 @@ async function runHybridLlmPhase(
     input.sourceSheetName,
   );
 
-  const { data: hybridResult, usage } = await generateJson(prompt, HybridTaxonomySchema, jsonGenOverrides);
+  const { data: hybridResult, usage } = await generateJson(
+    prompt,
+    HybridTaxonomySchema,
+    jsonGenOverrides,
+    { coercePrimitiveStringArrays: false },
+  );
   let totalTokens = usage.totalTokens;
 
   const validReclassified = hybridResult.reclassified.filter(
@@ -309,7 +316,12 @@ async function runFullTaxonomyPhase(
     input.baseSkill,
   );
 
-  const { data: skeleton, usage: skUsage } = await generateJson(skeletonPrompt, TaxonomySkeletonSchema, jsonGenOverrides);
+  const { data: skeleton, usage: skUsage } = await generateJson(
+    skeletonPrompt,
+    TaxonomySkeletonSchema,
+    jsonGenOverrides,
+    { coercePrimitiveStringArrays: false },
+  );
 
   const domainOrder = skeleton.domains.map((d) => d.id) as readonly string[];
   const summaryById = new Map(skeleton.domains.map((d) => [d.id, d.summary]));
@@ -440,7 +452,9 @@ async function runFullTaxonomyPhase(
           MIN_KEYWORDS,
           summaryById.get(domain.id),
         );
-        const { data, usage } = await generateJson(prompt, KeywordRefillSchema, jsonGenOverrides);
+        const { data, usage } = await generateJson(prompt, KeywordRefillSchema, jsonGenOverrides, {
+          coercePrimitiveStringArrays: false,
+        });
         totalTokens += usage.totalTokens;
         return { domainId: domain.id, newKeywords: data.keywords };
       }),
