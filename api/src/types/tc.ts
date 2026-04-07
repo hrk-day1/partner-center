@@ -1,69 +1,54 @@
 export const TC_COLUMNS = [
-  "TC_ID",
-  "Feature",
-  "Requirement_ID",
-  "Scenario",
-  "Precondition",
-  "Test_Steps",
-  "Test_Data",
-  "Expected_Result",
-  "Priority",
-  "Severity",
-  "Type",
-  "Environment",
-  "Owner",
-  "Status",
-  "Automation_Candidate",
-  "Traceability",
-  "Notes",
+  'TC_ID',
+  'Feature',
+  'Requirement_ID',
+  'Scenario',
+  'Precondition',
+  'Test_Steps',
+  'Test_Data',
+  'Expected_Result',
+  'Priority',
+  'Severity',
+  'Type',
+  'Environment',
+  'Owner',
+  'Status',
+  'Automation_Candidate',
+  'Traceability',
+  'Notes',
 ] as const;
 
 export type TcColumnName = (typeof TC_COLUMNS)[number];
 
-export const TC_TYPES = [
-  "Functional",
-  "Negative",
-  "Boundary",
-  "Regression",
-  "Accessibility",
-  "Security",
-] as const;
+export const TC_TYPES = ['Functional', 'Negative', 'Boundary', 'Regression', 'Accessibility', 'Security'] as const;
 
 export type TcType = (typeof TC_TYPES)[number];
 
-export type Priority = "P0" | "P1" | "P2";
-export type Severity = "S1" | "S2" | "S3";
+export type Priority = 'P0' | 'P1' | 'P2';
+export type Severity = 'S1' | 'S2' | 'S3';
 
-export const DOMAINS = [
-  "Auth",
-  "Payment",
-  "Content",
-  "Membership",
-  "Community",
-  "Creator",
-  "Admin",
-] as const;
+export const DOMAINS = ['Auth', 'Payment', 'Content', 'Membership', 'Community', 'Creator', 'Admin'] as const;
 
 export type Domain = (typeof DOMAINS)[number];
 
 export const FEATURE_TYPES = [
-  "조회",
-  "등록",
-  "수정",
-  "삭제",
-  "상태전이",
-  "승인반려",
-  "권한제어",
-  "파일처리",
-  "결제금액",
-  "스케줄배치",
-  "외부연동",
+  '조회',
+  '등록',
+  '수정',
+  '삭제',
+  '상태전이',
+  '승인반려',
+  '권한제어',
+  '파일처리',
+  '결제금액',
+  '스케줄배치',
+  '외부연동',
 ] as const;
 
 export type FeatureType = (typeof FEATURE_TYPES)[number];
 
 /** 스펙 휴리스틱 기반 — 고위험 행은 TC 포인트·상한·프롬프트 상세도 확대 */
-export type SpecRiskTier = "high" | "standard";
+export type SpecRiskTier = 'high' | 'standard';
 
 export interface TestCase {
   TC_ID: string;

@@ -1,7 +1,7 @@
-import { useState, useCallback, useEffect, useRef } from "react";
-import { useTranslation } from "react-i18next";
-import { apiGet, apiPost } from "@/shared/lib/api-client";
-import { subscribeToPipelineEvents, type AgentEvent } from "@/shared/lib/sse-client";
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { apiGet, apiPost } from '@/shared/lib/api-client';
+import { subscribeToPipelineEvents, type AgentEvent } from '@/shared/lib/sse-client';
 
 interface PriorityDistribution {
   P0: number;
@@ -72,7 +72,7 @@ export interface SkillSummary {
 
 /** 오케스트레이터 SSE `payload` (선택). */
 export interface OrchestratorProgressPayload {
-  phase?: "batch_generate" | "final_eval" | "final_fallback" | "merge";
+  phase?: 'batch_generate' | 'final_eval' | 'final_fallback' | 'merge';
   batchCurrent?: number;
   batchTotal?: number;
   batchSize?: number;
@@ -88,8 +88,8 @@ export interface OrchestratorProgressPayload {
 
 export interface AgentState {
   agentId: string;
-  agentType: "taxonomy" | "taxonomy-evaluator" | "plan" | "generator" | "merge" | "evaluator";
-  status: "pending" | "running" | "completed" | "failed";
+  agentType: 'taxonomy' | 'taxonomy-evaluator' | 'plan' | 'generator' | 'merge' | 'evaluator';
+  status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
   message: string;
   /** SSE 이벤트의 상세 진행 정보(오케스트레이터 등) */
@@ -101,9 +101,9 @@ export function useSkills() {
   const [skills, setSkills] = useState<SkillSummary[]>([]);
 
   useEffect(() => {
-    apiGet<SkillSummary[]>("/pipeline/skills")
+    apiGet<SkillSummary[]>('/pipeline/skills')
       .then(setSkills)
-      .catch(() => setSkills([{ id: "default", name: t("error.defaultSkill"), description: "" }]));
+      .catch(() => setSkills([{ id: 'default', name: t('error.defaultSkill'), description: '' }]));
   }, [t]);
 
   return skills;
@@ -133,7 +133,7 @@ export function usePipeline() {
     setAgents((prev) => {
       const idx = prev.findIndex((a) => a.agentId === event.agentId);
       const payload =
-        event.payload && typeof event.payload === "object" && !Array.isArray(event.payload)
+        event.payload && typeof event.payload === 'object' && !Array.isArray(event.payload)
           ? (event.payload as OrchestratorProgressPayload)
           : undefined;
       const state: AgentState = {
@@ -160,7 +160,7 @@ export function usePipeline() {
       if (!data.success) {
         const gaps = data.stats?.coverageGaps ?? [];
         const issues = data.evaluationIssues ?? [];
-        const msg = issues[0]?.message ?? gaps[0] ?? t("error.unknown");
+        const msg = issues[0]?.message ?? gaps[0] ?? t('error.unknown');
         setError(msg);
       }
       setLoading(false);
@@ -179,7 +179,7 @@ export function usePipeline() {
       setError(null);
       setResult(null);
       setAgents([]);
-      setStatusMessage(t("pipeline.progress.starting", "실행을 시작합니다…"));
+      setStatusMessage(t('pipeline.progress.starting', '실행을 시작합니다…'));
 
       if (unsubRef.current) {
         unsubRef.current();
@@ -188,8 +188,8 @@ export function usePipeline() {
       clearPoll();
 
       try {
-        const { pipelineId } = await apiPost<{ pipelineId: string }>("/pipeline/run/async", request);
-        setStatusMessage(t("pipeline.progress.running", "파이프라인 처리 중…"));
+        const { pipelineId } = await apiPost<{ pipelineId: string }>('/pipeline/run/async', request);
+        setStatusMessage(t('pipeline.progress.running', '파이프라인 처리 중…'));
 
         let pollAttempts = 0;
         const startPoll = () => {
@@ -198,7 +198,9 @@ export function usePipeline() {
             pollAttempts += 1;
             if (pollAttempts > POLL_MAX) {
               clearPoll();
-              setError(t("pipeline.progress.timeout", "진행 상태를 확인하지 못했습니다. 잠시 후 결과를 다시 확인해 주세요."));
+              setError(
+                t('pipeline.progress.timeout', '진행 상태를 확인하지 못했습니다. 잠시 후 결과를 다시 확인해 주세요.'),
+              );
               setLoading(false);
               setStatusMessage(null);
               if (unsubRef.current) {
@@ -226,7 +228,7 @@ export function usePipeline() {
           },
           (payload) => {
             clearPoll();
-            if (payload && typeof payload === "object" && "success" in (payload as object)) {
+            if (payload && typeof payload === 'object' && 'success' in (payload as object)) {
               finishPipeline(payload as PipelineResult);
             } else {
               void (async () => {
@@ -250,7 +252,7 @@ export function usePipeline() {
           },
         );
       } catch (err) {
-        setError(err instanceof Error ? err.message : t("error.unknown"));
+        setError(err instanceof Error ? err.message : t('error.unknown'));
         setLoading(false);
         setStatusMessage(null);
         clearPoll();

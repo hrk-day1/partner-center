@@ -1,13 +1,9 @@
-import type { AgentResult, AgentType, Implementation, SubAgentConfig } from "./types.js";
-import type { eventBus } from "./event-bus.js";
+import type { AgentResult, AgentType, Implementation, SubAgentConfig } from './types.js';
+import type { eventBus } from './event-bus.js';
 
 export interface Agent<TInput, TOutput> {
   readonly type: AgentType;
-  run(
-    input: TInput,
-    bus: typeof eventBus,
-    config: SubAgentConfig,
-  ): Promise<AgentResult<TOutput>>;
+  run(input: TInput, bus: typeof eventBus, config: SubAgentConfig): Promise<AgentResult<TOutput>>;
 }
 
 type AgentFactory = new () => Agent<unknown, unknown>;
@@ -18,18 +14,11 @@ function key(agentType: AgentType, impl: Implementation): string {
   return `${agentType}:${impl}`;
 }
 
-export function registerAgent(
-  agentType: AgentType,
-  impl: Implementation,
-  factory: AgentFactory,
-): void {
+export function registerAgent(agentType: AgentType, impl: Implementation, factory: AgentFactory): void {
   registry.set(key(agentType, impl), factory);
 }
 
-export function getAgent<TInput, TOutput>(
-  agentType: AgentType,
-  impl: Implementation,
-): Agent<TInput, TOutput> {
+export function getAgent<TInput, TOutput>(agentType: AgentType, impl: Implementation): Agent<TInput, TOutput> {
   const Factory = registry.get(key(agentType, impl));
   if (!Factory) {
     throw new Error(`Agent not found: ${agentType}/${impl}`);
@@ -39,7 +28,7 @@ export function getAgent<TInput, TOutput>(
 
 export function listAgents(): { agentType: string; implementation: string }[] {
   return [...registry.keys()].map((k) => {
-    const [agentType, implementation] = k.split(":");
+    const [agentType, implementation] = k.split(':');
     return { agentType, implementation };
   });
 }

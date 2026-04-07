@@ -2,8 +2,8 @@
 const INVALID = /[/\\?*[\]:]/g;
 
 export function sanitizeSheetTitleSegment(raw: string): string {
-  const trimmed = raw.trim().replace(INVALID, "_").replace(/\s+/g, " ");
-  if (trimmed.length === 0) return "Sheet";
+  const trimmed = raw.trim().replace(INVALID, '_').replace(/\s+/g, ' ');
+  if (trimmed.length === 0) return 'Sheet';
   const maxBody = 80 - 3;
   return trimmed.length > maxBody ? trimmed.slice(0, maxBody) : trimmed;
 }

@@ -27,10 +27,10 @@ partner-center/
         └── shared/             #   공통 UI · API 클라이언트 · SSE · i18n
 ```
 
-| 워크스페이스 | 포트 | 스택 | 설명 |
-|---|---|---|---|
-| `api` | 4000 (기본, `api/.env`의 `API_PORT`) | Express 5 · Google Sheets API · Gemini AI · Zod | TC 생성 파이프라인 API 서버 |
-| `waterbean` | 8080 (기본, `waterbean/.env`의 `WATERBEAN_PORT`) | React 19 · Vite 8 · Tailwind 4 | Pipeline 실행 UI (`/api` → 로컬 API 프록시) |
+| 워크스페이스 | 포트                                             | 스택                                            | 설명                                        |
+| ------------ | ------------------------------------------------ | ----------------------------------------------- | ------------------------------------------- |
+| `api`        | 4000 (기본, `api/.env`의 `API_PORT`)             | Express 5 · Google Sheets API · Gemini AI · Zod | TC 생성 파이프라인 API 서버                 |
+| `waterbean`  | 8080 (기본, `waterbean/.env`의 `WATERBEAN_PORT`) | React 19 · Vite 8 · Tailwind 4                  | Pipeline 실행 UI (`/api` → 로컬 API 프록시) |
 
 ## 시작하기
 
@@ -56,27 +56,27 @@ npm install
 cp api/.env.example api/.env
 ```
 
-| 변수 | 설명 | 기본값 |
-|---|---|---|
-| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH` | 서비스 계정 키 JSON 경로 (api/ 기준 상대경로) | `../sa.json` |
-| `API_PORT` | API 서버 리슨 포트 | `4000` |
-| `GEMINI_API_KEY` | Gemini API 키 | — |
-| `GEMINI_MODEL` | 사용할 Gemini 모델 | `gemini-2.5-flash-lite` |
-| `LLM_MAX_TOKENS` | LLM 최대 출력 토큰 (`maxOutputTokens`) | `8192` |
-| `LLM_TEMPERATURE` | LLM Temperature | `1.0` |
-| `LLM_TIMEOUT_MS` | LLM 요청 타임아웃 (ms) | `30000` |
-| `LLM_JSON_LOG_CHARS` | JSON 파싱 실패 시 터미널 로그 최대 문자 수 (선택) | `65536` |
-| `LLM_PLAN_CHUNK_SIZE` | Plan 단계 시트 행 청크 크기 | `10` |
-| `LLM_PLAN_CONCURRENCY` | Plan 청크 LLM 동시 호출 수 (1~8) | `3` |
-| `LLM_GEN_CHUNK_SIZE` | Generator 청크(체크리스트 건수) | `5` |
-| `LLM_MERGE_CHUNK_SIZE` | Merge 단계 청크 크기 | `20` |
-| `LLM_GEN_BATCH_SIZE` | Orchestrator가 Generator·Evaluator에 넘기는 배치 크기(건) | `20` |
-| `PIPELINE_HIGH_RISK_MAX_TC_PER_REQUIREMENT` | `specRiskTier` high 행의 Requirement_ID당 TC 상한 (API 미지정 시, 최소 2) | `6` |
-| `PIPELINE_DOMAIN_MINSET_FILL` | 도메인 최소 세트 보완 TC 부착: `round_robin` \| `representative` \| `off` (API `domainMinSetFill` 미지정 시) | API·env 모두 없으면 `round_robin` |
-| `PIPELINE_EVAL_SPEC_GROUNDING` | D-Evaluator 스펙 근거 게이트: `off` \| `warn` \| `block` (API 미지정 시) | `warn` |
-| `PIPELINE_EVAL_TRACEABILITY` | Traceability `R행` 정합 게이트: `off` \| `warn` \| `block` | `warn` |
-| `PIPELINE_DEBUG_DIR` | Plan/Generator 입출력 등 디버그 JSON 저장 디렉터리. 완료 시 `{dir}/{pipelineId}/artifacts/pipeline-result.json`에 최종 통계·Evaluator 이슈도 기록 | — (비활성) |
-| `PIPELINE_MAX_TOTAL_TCS` | 파이프라인 전체 TC 상한(잘림 방지) | `800` |
+| 변수                                        | 설명                                                                                                                                              | 기본값                            |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
+| `GOOGLE_SERVICE_ACCOUNT_KEY_PATH`           | 서비스 계정 키 JSON 경로 (api/ 기준 상대경로)                                                                                                     | `../sa.json`                      |
+| `API_PORT`                                  | API 서버 리슨 포트                                                                                                                                | `4000`                            |
+| `GEMINI_API_KEY`                            | Gemini API 키                                                                                                                                     | —                                 |
+| `GEMINI_MODEL`                              | 사용할 Gemini 모델                                                                                                                                | `gemini-2.5-flash-lite`           |
+| `LLM_MAX_TOKENS`                            | LLM 최대 출력 토큰 (`maxOutputTokens`)                                                                                                            | `8192`                            |
+| `LLM_TEMPERATURE`                           | LLM Temperature                                                                                                                                   | `1.0`                             |
+| `LLM_TIMEOUT_MS`                            | LLM 요청 타임아웃 (ms)                                                                                                                            | `30000`                           |
+| `LLM_JSON_LOG_CHARS`                        | JSON 파싱 실패 시 터미널 로그 최대 문자 수 (선택)                                                                                                 | `65536`                           |
+| `LLM_PLAN_CHUNK_SIZE`                       | Plan 단계 시트 행 청크 크기                                                                                                                       | `10`                              |
+| `LLM_PLAN_CONCURRENCY`                      | Plan 청크 LLM 동시 호출 수 (1~8)                                                                                                                  | `3`                               |
+| `LLM_GEN_CHUNK_SIZE`                        | Generator 청크(체크리스트 건수)                                                                                                                   | `5`                               |
+| `LLM_MERGE_CHUNK_SIZE`                      | Merge 단계 청크 크기                                                                                                                              | `20`                              |
+| `LLM_GEN_BATCH_SIZE`                        | Orchestrator가 Generator·Evaluator에 넘기는 배치 크기(건)                                                                                         | `20`                              |
+| `PIPELINE_HIGH_RISK_MAX_TC_PER_REQUIREMENT` | `specRiskTier` high 행의 Requirement_ID당 TC 상한 (API 미지정 시, 최소 2)                                                                         | `6`                               |
+| `PIPELINE_DOMAIN_MINSET_FILL`               | 도메인 최소 세트 보완 TC 부착: `round_robin` \| `representative` \| `off` (API `domainMinSetFill` 미지정 시)                                      | API·env 모두 없으면 `round_robin` |
+| `PIPELINE_EVAL_SPEC_GROUNDING`              | D-Evaluator 스펙 근거 게이트: `off` \| `warn` \| `block` (API 미지정 시)                                                                          | `warn`                            |
+| `PIPELINE_EVAL_TRACEABILITY`                | Traceability `R행` 정합 게이트: `off` \| `warn` \| `block`                                                                                        | `warn`                            |
+| `PIPELINE_DEBUG_DIR`                        | Plan/Generator 입출력 등 디버그 JSON 저장 디렉터리. 완료 시 `{dir}/{pipelineId}/artifacts/pipeline-result.json`에 최종 통계·Evaluator 이슈도 기록 | — (비활성)                        |
+| `PIPELINE_MAX_TOTAL_TCS`                    | 파이프라인 전체 TC 상한(잘림 방지)                                                                                                                | `800`                             |
 
 `API_PORT`가 비어 있으면 예전처럼 `PORT`만으로도 API 리슨 포트를 지정할 수 있습니다.
 
@@ -88,10 +88,10 @@ Vite 개발 서버 포트와, 프록시가 넘길 백엔드 포트를 둡니다.
 cp waterbean/.env.example waterbean/.env
 ```
 
-| 변수 | 설명 | 기본값 |
-|---|---|---|
-| `WATERBEAN_PORT` | Waterbean(Vite) 리슨 포트 | `8080` |
-| `API_PORT` | `/api` 요청 프록시 대상 (`http://localhost:{API_PORT}`). **`api/.env`의 `API_PORT`와 같게 두는 것을 권장** | `4000` |
+| 변수             | 설명                                                                                                       | 기본값 |
+| ---------------- | ---------------------------------------------------------------------------------------------------------- | ------ |
+| `WATERBEAN_PORT` | Waterbean(Vite) 리슨 포트                                                                                  | `8080` |
+| `API_PORT`       | `/api` 요청 프록시 대상 (`http://localhost:{API_PORT}`). **`api/.env`의 `API_PORT`와 같게 두는 것을 권장** | `4000` |
 
 `WATERBEAN_PORT`가 비어 있으면 예전처럼 `PORT`만으로도 Waterbean 개발 서버 포트를 지정할 수 있습니다.
 
@@ -190,19 +190,19 @@ Plan · Generator · Merge · Evaluator · **Taxonomy Evaluator**는 **Agent Reg
 
 저장소에는 결정적(deterministic) 에이전트 구현 파일도 있으나, 현재 런타임 구현 선택값은 **`llm` 고정**입니다.
 
-| 구현체 | 설명 |
-|---|---|
-| `llm` | Gemini 기반 생성·수정 (Evaluator는 규칙 검증 후 필요 시 repair 등) |
+| 구현체 | 설명                                                               |
+| ------ | ------------------------------------------------------------------ |
+| `llm`  | Gemini 기반 생성·수정 (Evaluator는 규칙 검증 후 필요 시 repair 등) |
 
 ### 핵심 모듈
 
-| 모듈 | 위치 | 역할 |
-|---|---|---|
-| Orchestrator | `api/src/agents/orchestrator.ts` | 시트 읽기, Taxonomy·Taxonomy Evaluator 재시도, Plan→Generator→Evaluator 배치, 폴백 라운드, 선택적 Merge, 쓰기 |
-| EventBus | `api/src/agents/event-bus.ts` | 에이전트 이벤트 · SSE 브리지 |
-| Agent Registry | `api/src/agents/registry.ts` | 에이전트 등록 · 조회 |
-| In-Memory Store | `api/src/agents/store.ts` | 실행 상태 저장 (TTL GC) |
-| Gemini Client | `api/src/llm/gemini-client.ts` | 생성 · Zod 검증 · JSON 추출/복구 · `LlmJsonParseError` 시 로그/UI용 `llmJsonFailureLog` |
+| 모듈            | 위치                             | 역할                                                                                                          |
+| --------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Orchestrator    | `api/src/agents/orchestrator.ts` | 시트 읽기, Taxonomy·Taxonomy Evaluator 재시도, Plan→Generator→Evaluator 배치, 폴백 라운드, 선택적 Merge, 쓰기 |
+| EventBus        | `api/src/agents/event-bus.ts`    | 에이전트 이벤트 · SSE 브리지                                                                                  |
+| Agent Registry  | `api/src/agents/registry.ts`     | 에이전트 등록 · 조회                                                                                          |
+| In-Memory Store | `api/src/agents/store.ts`        | 실행 상태 저장 (TTL GC)                                                                                       |
+| Gemini Client   | `api/src/llm/gemini-client.ts`   | 생성 · Zod 검증 · JSON 추출/복구 · `LlmJsonParseError` 시 로그/UI용 `llmJsonFailureLog`                       |
 
 ### 도메인·실행 모드 (고정)
 
@@ -302,11 +302,11 @@ Taxonomy 기반 파이프라인에서 도메인 분포가 한쪽으로 쏠리거
 
 `api/src/skills/presets/` JSON으로 TC 생성 전략을 정의합니다.
 
-| 프리셋 | 설명 |
-|---|---|
-| `default.json` | 7도메인 범용 (Auth, Payment, Content, Membership, Community, Creator, Admin) |
-| `auth-focused.json` | Auth·Security 강조 프리셋 |
-| `sheet-grounded.json` | 기능명·기능설명에만 근거하도록 policyHints·min set 완화 (PG 등 과생성 억제) |
+| 프리셋                | 설명                                                                         |
+| --------------------- | ---------------------------------------------------------------------------- |
+| `default.json`        | 7도메인 범용 (Auth, Payment, Content, Membership, Community, Creator, Admin) |
+| `auth-focused.json`   | Auth·Security 강조 프리셋                                                    |
+| `sheet-grounded.json` | 기능명·기능설명에만 근거하도록 policyHints·min set 완화 (PG 등 과생성 억제)  |
 
 각 프리셋: **domainKeywords**, **templates**, **domainMinSets**, **priorityRules** / **severityRules**.
 
@@ -318,41 +318,41 @@ Taxonomy 기반 파이프라인에서 도메인 분포가 한쪽으로 쏠리거
 
 ### 공통
 
-| 메서드 | 경로 | 설명 |
-|---|---|---|
-| `GET` | `/health` | 헬스체크 |
-| `GET` | `/pipeline/skills` | 스킬 목록 |
-| `GET` | `/pipeline/source-sheet?url=` | URL의 gid(또는 첫 탭)에 해당하는 **소스 탭 이름** 및 제안 출력 시트명 `TC_{...}` (읽기 전용) |
-| `GET` | `/pipeline/agents` | 등록 에이전트 목록 |
+| 메서드 | 경로                          | 설명                                                                                         |
+| ------ | ----------------------------- | -------------------------------------------------------------------------------------------- |
+| `GET`  | `/health`                     | 헬스체크                                                                                     |
+| `GET`  | `/pipeline/skills`            | 스킬 목록                                                                                    |
+| `GET`  | `/pipeline/source-sheet?url=` | URL의 gid(또는 첫 탭)에 해당하는 **소스 탭 이름** 및 제안 출력 시트명 `TC_{...}` (읽기 전용) |
+| `GET`  | `/pipeline/agents`            | 등록 에이전트 목록                                                                           |
 
 ### Pipeline
 
-| 메서드 | 경로 | 설명 |
-|---|---|---|
-| `POST` | `/pipeline/run` | 동기 실행 |
-| `POST` | `/pipeline/run/async` | 비동기 (`pipelineId`) |
-| `GET` | `/pipeline/run/:id/events` | SSE 진행 |
-| `GET` | `/pipeline/run/:id/result` | 결과 |
-| `GET` | `/pipeline/run/:id/agents` | 에이전트 상태 |
-| `POST` | `/pipeline/notify` | 알림 스켈레톤(본문 검증·로그만, 실제 웹훅 없음) |
+| 메서드 | 경로                       | 설명                                            |
+| ------ | -------------------------- | ----------------------------------------------- |
+| `POST` | `/pipeline/run`            | 동기 실행                                       |
+| `POST` | `/pipeline/run/async`      | 비동기 (`pipelineId`)                           |
+| `GET`  | `/pipeline/run/:id/events` | SSE 진행                                        |
+| `GET`  | `/pipeline/run/:id/result` | 결과                                            |
+| `GET`  | `/pipeline/run/:id/agents` | 에이전트 상태                                   |
+| `POST` | `/pipeline/notify`         | 알림 스켈레톤(본문 검증·로그만, 실제 웹훅 없음) |
 
 ### 요청 본문 (`/pipeline/run`, `/pipeline/run/async`)
 
-| 필드 | 필수 | 설명 |
-|---|---|---|
-| `spreadsheetUrl` | 예 | 스프레드시트 URL |
-| `targetSheetName` | 예 | 결과 TC를 쓸 시트 이름 |
-| `sourceSheetName` / `sourceGid` | 아니오 | 소스 탭 지정(미지정 시 URL·첫 탭 규칙에 따름) |
-| `ownerDefault` | 아니오 | 기본 담당자 (기본 `TBD`) |
-| `environmentDefault` | 아니오 | 기본 환경 (기본 `WEB-CHROME`) |
-| `skillId` | 아니오 | 기본 `sheet-grounded` |
-| `maxFallbackRounds` | 아니오 | Generator 폴백 최대 회수 (0~5, 기본 `2`) |
-| `maxTcPerRequirement` | 아니오 | 요구사항당 TC 상한 |
-| `highRiskMaxTcPerRequirement` | 아니오 | `specRiskTier` high 행의 요구사항당 TC 상한 (미지정 시 env 기본) |
-| `mergeSimilarTestCases` | 아니오 | `true`면 Evaluator 이후 Merge(LLM) 실행 (기본 `false`) |
-| `domainMinSetFill` | 아니오 | `round_robin` \| `representative` \| `off` (미지정 시 env·기본 `round_robin`) |
-| `evalSpecGrounding` | 아니오 | `off` \| `warn` \| `block` |
-| `evalTraceability` | 아니오 | `off` \| `warn` \| `block` |
+| 필드                            | 필수   | 설명                                                                          |
+| ------------------------------- | ------ | ----------------------------------------------------------------------------- |
+| `spreadsheetUrl`                | 예     | 스프레드시트 URL                                                              |
+| `targetSheetName`               | 예     | 결과 TC를 쓸 시트 이름                                                        |
+| `sourceSheetName` / `sourceGid` | 아니오 | 소스 탭 지정(미지정 시 URL·첫 탭 규칙에 따름)                                 |
+| `ownerDefault`                  | 아니오 | 기본 담당자 (기본 `TBD`)                                                      |
+| `environmentDefault`            | 아니오 | 기본 환경 (기본 `WEB-CHROME`)                                                 |
+| `skillId`                       | 아니오 | 기본 `sheet-grounded`                                                         |
+| `maxFallbackRounds`             | 아니오 | Generator 폴백 최대 회수 (0~5, 기본 `2`)                                      |
+| `maxTcPerRequirement`           | 아니오 | 요구사항당 TC 상한                                                            |
+| `highRiskMaxTcPerRequirement`   | 아니오 | `specRiskTier` high 행의 요구사항당 TC 상한 (미지정 시 env 기본)              |
+| `mergeSimilarTestCases`         | 아니오 | `true`면 Evaluator 이후 Merge(LLM) 실행 (기본 `false`)                        |
+| `domainMinSetFill`              | 아니오 | `round_robin` \| `representative` \| `off` (미지정 시 env·기본 `round_robin`) |
+| `evalSpecGrounding`             | 아니오 | `off` \| `warn` \| `block`                                                    |
+| `evalTraceability`              | 아니오 | `off` \| `warn` \| `block`                                                    |
 
 요청 JSON 스키마에는 `maxLlmRounds` 등 추가 필드가 있을 수 있으나, 현재 `orchestrate` 구현에서 참조되지 않는 값은 동작에 영향을 주지 않습니다.
 

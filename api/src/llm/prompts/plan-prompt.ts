@@ -1,7 +1,7 @@
-import type { ResolvedSkill } from "../../skills/resolved-skill.js";
-import type { TcSourceFieldRow } from "../../pipeline/plan.js";
-import { FEATURE_TYPES } from "../../types/tc.js";
-import { PLAN_KEY_MAP, keyMappingTable } from "../key-mapping.js";
+import type { ResolvedSkill } from '../../skills/resolved-skill.js';
+import type { TcSourceFieldRow } from '../../pipeline/plan.js';
+import { FEATURE_TYPES } from '../../types/tc.js';
+import { PLAN_KEY_MAP, keyMappingTable } from '../key-mapping.js';
 
 /**
  * 청크마다 동일하게 붙는 공통 프롬프트(규칙·도메인·출력 스키마).
@@ -9,8 +9,8 @@ import { PLAN_KEY_MAP, keyMappingTable } from "../key-mapping.js";
  */
 export function buildPlanPromptPrefix(resolved: ResolvedSkill): string {
   const domainKeywordsSection = resolved.domainOrder
-    .map((d) => `  - ${d}: ${(resolved.domainKeywords[d] ?? []).join(", ")}`)
-    .join("\n");
+    .map((d) => `  - ${d}: ${(resolved.domainKeywords[d] ?? []).join(', ')}`)
+    .join('\n');
 
   return `당신은 시니어 QA 분석가입니다. 스프레드시트 데이터를 분석해 구조화된 체크리스트를 작성하세요.
 
@@ -48,9 +48,7 @@ export function buildPlanPromptChunkBody(
   sourceSheetName: string,
   rows: { sourceRow: number; fields: TcSourceFieldRow }[],
 ): string {
-  const rowsPreview = rows
-    .map((r) => `  행 ${r.sourceRow}: ${JSON.stringify(r.fields)}`)
-    .join("\n");
+  const rowsPreview = rows.map((r) => `  행 ${r.sourceRow}: ${JSON.stringify(r.fields)}`).join('\n');
 
   return `## 시트: "${sourceSheetName}"
 ### 데이터 행 (TC 소스 필드만: 대분류, 중분류, 소분류, 기능명, 기능설명)
@@ -58,10 +56,7 @@ ${rowsPreview}
 `;
 }
 
-export function buildPlanPromptSuffix(
-  resolved: ResolvedSkill,
-  sourceSheetName: string,
-): string {
+export function buildPlanPromptSuffix(resolved: ResolvedSkill, sourceSheetName: string): string {
   return `## 출력 형식
 축약 키 사용. 매핑: ${keyMappingTable(PLAN_KEY_MAP)}
 - ${PLAN_KEY_MAP.id}: "CL-XXXX"
@@ -85,8 +80,8 @@ export function buildPlanPrompt(
   rows: { sourceRow: number; fields: TcSourceFieldRow }[],
 ): string {
   return (
-    buildPlanPromptPrefix(resolved)
-    + buildPlanPromptChunkBody(sourceSheetName, rows)
-    + buildPlanPromptSuffix(resolved, sourceSheetName)
+    buildPlanPromptPrefix(resolved) +
+    buildPlanPromptChunkBody(sourceSheetName, rows) +
+    buildPlanPromptSuffix(resolved, sourceSheetName)
   );
 }

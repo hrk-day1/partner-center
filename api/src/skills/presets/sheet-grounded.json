@@ -12,14 +12,46 @@
     "Admin": ["admin", "role", "permission", "console", "운영", "권한", "관리자"]
   },
   "policyHints": [
-    { "domain": "_common", "hint": "templates/commonTemplates의 steps와 생성 TC의 Test_Steps에는 로그인·메뉴 이동·단순 화면 진입 문구를 매번 넣지 말 것. 계정·역할·초기 화면은 precondition에만 기술한다", "riskLevel": "low" },
-    { "domain": "_common", "hint": "도메인 정책 힌트는 **기능설명·기능명에 해당 주제가 드러날 때만** TC에 반영한다. 시트에 없는 PG·배치·외부연동·권한 시나리오를 임의로 추가하지 않는다.", "riskLevel": "medium" },
-    { "domain": "Payment", "hint": "기능설명에 실결제·PG·승인·환불·웹훅·멱등·결제 실패·타임아웃 등이 **명시된 경우에만** 해당 흐름을 TC에 포함한다. 결제 정보만 표시하는 화면에는 PG 시나리오를 넣지 않는다.", "riskLevel": "medium" },
-    { "domain": "Auth", "hint": "기능설명·기능명에 인증·로그인·세션·토큰·OAuth·콜백·잠금 등이 언급된 경우에만 해당 흐름을 featureTypes·시나리오에 반영한다.", "riskLevel": "medium" },
-    { "domain": "Content", "hint": "기능설명에 게시·공개/비공개·예약·첨부·미디어 등이 명시된 경우에만 상태전이·파일처리 관련 시나리오를 확장한다.", "riskLevel": "medium" },
-    { "domain": "Membership", "hint": "기능설명에 구독·가격·만료·해지 등이 명시된 경우에만 관련 시나리오를 포함한다.", "riskLevel": "medium" },
-    { "domain": "Community", "hint": "기능설명에 댓글·신고·게시판 등이 명시된 경우에만 관련 시나리오를 포함한다.", "riskLevel": "medium" },
-    { "domain": "Creator", "hint": "기능설명에 크리에이터 승인·프로필·연결 정보 등이 명시된 경우에만 관련 시나리오를 포함한다.", "riskLevel": "medium" }
+    {
+      "domain": "_common",
+      "hint": "templates/commonTemplates의 steps와 생성 TC의 Test_Steps에는 로그인·메뉴 이동·단순 화면 진입 문구를 매번 넣지 말 것. 계정·역할·초기 화면은 precondition에만 기술한다",
+      "riskLevel": "low"
+    },
+    {
+      "domain": "_common",
+      "hint": "도메인 정책 힌트는 **기능설명·기능명에 해당 주제가 드러날 때만** TC에 반영한다. 시트에 없는 PG·배치·외부연동·권한 시나리오를 임의로 추가하지 않는다.",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Payment",
+      "hint": "기능설명에 실결제·PG·승인·환불·웹훅·멱등·결제 실패·타임아웃 등이 **명시된 경우에만** 해당 흐름을 TC에 포함한다. 결제 정보만 표시하는 화면에는 PG 시나리오를 넣지 않는다.",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Auth",
+      "hint": "기능설명·기능명에 인증·로그인·세션·토큰·OAuth·콜백·잠금 등이 언급된 경우에만 해당 흐름을 featureTypes·시나리오에 반영한다.",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Content",
+      "hint": "기능설명에 게시·공개/비공개·예약·첨부·미디어 등이 명시된 경우에만 상태전이·파일처리 관련 시나리오를 확장한다.",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Membership",
+      "hint": "기능설명에 구독·가격·만료·해지 등이 명시된 경우에만 관련 시나리오를 포함한다.",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Community",
+      "hint": "기능설명에 댓글·신고·게시판 등이 명시된 경우에만 관련 시나리오를 포함한다.",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Creator",
+      "hint": "기능설명에 크리에이터 승인·프로필·연결 정보 등이 명시된 경우에만 관련 시나리오를 포함한다.",
+      "riskLevel": "medium"
+    }
   ],
   "domainMinSets": {
     "Auth": { "Functional": 2, "Negative": 2, "Boundary": 1, "Security": 1, "Regression": 1, "Accessibility": 0 },

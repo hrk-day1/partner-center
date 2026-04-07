@@ -12,21 +12,57 @@
     "Admin": ["admin", "role", "permission", "console", "운영", "권한", "관리자"]
   },
   "policyHints": [
-    { "domain": "_common", "hint": "templates/commonTemplates의 steps와 생성 TC의 Test_Steps에는 로그인·메뉴 이동·단순 화면 진입 문구를 매번 넣지 말 것. 계정·역할·초기 화면은 precondition에만 기술한다", "riskLevel": "low" },
-    { "domain": "_common", "hint": "화면이 존재하는 기능은 읽기전용 계정의 쓰기 차단을 검증해야 한다", "riskLevel": "high" },
+    {
+      "domain": "_common",
+      "hint": "templates/commonTemplates의 steps와 생성 TC의 Test_Steps에는 로그인·메뉴 이동·단순 화면 진입 문구를 매번 넣지 말 것. 계정·역할·초기 화면은 precondition에만 기술한다",
+      "riskLevel": "low"
+    },
+    {
+      "domain": "_common",
+      "hint": "화면이 존재하는 기능은 읽기전용 계정의 쓰기 차단을 검증해야 한다",
+      "riskLevel": "high"
+    },
     { "domain": "_common", "hint": "CRUD 기능은 필수값 누락 시 저장 실패 검증이 필요하다", "riskLevel": "medium" },
-    { "domain": "Auth", "hint": "인증 실패 시 계정 잠금 정책과 토큰 만료/변조 차단을 검증해야 한다", "riskLevel": "high" },
+    {
+      "domain": "Auth",
+      "hint": "인증 실패 시 계정 잠금 정책과 토큰 만료/변조 차단을 검증해야 한다",
+      "riskLevel": "high"
+    },
     { "domain": "Auth", "hint": "SSO/OAuth 외부 인증 연동 시 콜백 처리를 검증해야 한다", "riskLevel": "medium" },
     { "domain": "Payment", "hint": "결제 금액 변조 차단과 멱등키 중복 요청 방지를 검증해야 한다", "riskLevel": "high" },
     { "domain": "Payment", "hint": "승인-취소-환불 상태 전이와 웹훅 수신 처리를 검증해야 한다", "riskLevel": "high" },
     { "domain": "Payment", "hint": "PG 타임아웃 시 재시도 또는 오류 처리를 검증해야 한다", "riskLevel": "medium" },
-    { "domain": "Content", "hint": "포스트 상태 전이(공개/비공개/예약)와 예약 시간 도래 시 자동 공개를 검증해야 한다", "riskLevel": "medium" },
-    { "domain": "Content", "hint": "첨부파일 업로드/다운로드와 본문 렌더링 정합성을 검증해야 한다", "riskLevel": "low" },
-    { "domain": "Membership", "hint": "구독 상태 전이(활성/해지/만료)와 가격 변경 시 기존 구독자 영향을 검증해야 한다", "riskLevel": "medium" },
+    {
+      "domain": "Content",
+      "hint": "포스트 상태 전이(공개/비공개/예약)와 예약 시간 도래 시 자동 공개를 검증해야 한다",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Content",
+      "hint": "첨부파일 업로드/다운로드와 본문 렌더링 정합성을 검증해야 한다",
+      "riskLevel": "low"
+    },
+    {
+      "domain": "Membership",
+      "hint": "구독 상태 전이(활성/해지/만료)와 가격 변경 시 기존 구독자 영향을 검증해야 한다",
+      "riskLevel": "medium"
+    },
     { "domain": "Membership", "hint": "무료/유료 전환 경계값(0원, 음수)을 검증해야 한다", "riskLevel": "medium" },
-    { "domain": "Community", "hint": "댓글 신고 및 블라인드 처리, 대댓글 계층 표시를 검증해야 한다", "riskLevel": "medium" },
-    { "domain": "Community", "hint": "댓글 게시판 운영여부(Y/N) 전환 시 작성 차단/허용을 검증해야 한다", "riskLevel": "low" },
-    { "domain": "Creator", "hint": "크리에이터 승인/비활성화 상태 전이와 프로필 수정 반영을 검증해야 한다", "riskLevel": "medium" },
+    {
+      "domain": "Community",
+      "hint": "댓글 신고 및 블라인드 처리, 대댓글 계층 표시를 검증해야 한다",
+      "riskLevel": "medium"
+    },
+    {
+      "domain": "Community",
+      "hint": "댓글 게시판 운영여부(Y/N) 전환 시 작성 차단/허용을 검증해야 한다",
+      "riskLevel": "low"
+    },
+    {
+      "domain": "Creator",
+      "hint": "크리에이터 승인/비활성화 상태 전이와 프로필 수정 반영을 검증해야 한다",
+      "riskLevel": "medium"
+    },
     { "domain": "Creator", "hint": "크리에이터-멤버십 양방향 연결 정보 정합성을 검증해야 한다", "riskLevel": "low" }
   ],
   "domainMinSets": {

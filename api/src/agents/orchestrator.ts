@@ -1,41 +1,34 @@
-import crypto from "node:crypto";
+import crypto from 'node:crypto';
 import type {
   EvaluateOptions,
   Implementation,
   PipelineConfig,
   PipelineResult,
   TaxonomyEvaluationResult,
-} from "../types/pipeline.js";
+} from '../types/pipeline.js';
 
-const IMPL: Implementation = "llm";
-const DOMAIN_SCOPE_ALL = "ALL" as const;
-import type { ChecklistItem, TestCase } from "../types/tc.js";
-import type { EvaluationResult } from "../types/pipeline.js";
-import { parseSpreadsheetUrl, findSheetName, readSheetValues } from "../sheets/reader.js";
-import { createSheet, writeHeaders, writeTestCases, clearSheetData } from "../sheets/writer.js";
-import { env } from "../config/env.js";
-import { getSkill } from "../skills/registry.js";
-import { skillManifestToResolved } from "../skills/resolved-skill.js";
-import { detectHeaderAndData } from "../pipeline/plan.js";
-import { sortGlobalCommonTcFirstAndRenumber } from "../pipeline/generator.js";
-import {
-  resolvePipelineDebugRoot,
-  writePipelineDebugJson,
-} from "../pipeline/pipeline-debug.js";
-import {
-  formatLlmJsonFailureForUi,
-  getLlmJsonLogCharLimit,
-  LlmJsonParseError,
-} from "../llm/gemini-client.js";
-import { runTaxonomyPhase } from "./llm-taxonomy-agent.js";
-import { eventBus } from "./event-bus.js";
-import { getAgent } from "./registry.js";
-import { createExecution, updateAgentState, completeExecution } from "./store.js";
-import type { PlanInput } from "./deterministic-plan-agent.js";
-import type { GeneratorInput } from "./deterministic-generator-agent.js";
-import type { MergeInput } from "./llm-merge-agent.js";
-import type { EvaluatorInput } from "./deterministic-evaluator-agent.js";
-import type { TaxonomyEvaluatorInput } from "./deterministic-taxonomy-evaluator-agent.js";
+const IMPL: Implementation = 'llm';
+const DOMAIN_SCOPE_ALL = 'ALL' as const;
+import type { ChecklistItem, TestCase } from '../types/tc.js';
+import type { EvaluationResult } from '../types/pipeline.js';
+import { parseSpreadsheetUrl, findSheetName, readSheetValues } from '../sheets/reader.js';
+import { createSheet, writeHeaders, writeTestCases, clearSheetData } from '../sheets/writer.js';
+import { env } from '../config/env.js';
+import { getSkill } from '../skills/registry.js';
+import { skillManifestToResolved } from '../skills/resolved-skill.js';
+import { detectHeaderAndData } from '../pipeline/plan.js';
+import { sortGlobalCommonTcFirstAndRenumber } from '../pipeline/generator.js';
+import { resolvePipelineDebugRoot, writePipelineDebugJson } from '../pipeline/pipeline-debug.js';
+import { formatLlmJsonFailureForUi, getLlmJsonLogCharLimit, LlmJsonParseError } from '../llm/gemini-client.js';
+import { runTaxonomyPhase } from './llm-taxonomy-agent.js';
+import { eventBus } from './event-bus.js';
+import { getAgent } from './registry.js';
+import { createExecution, updateAgentState, completeExecution } from './store.js';
+import type { PlanInput } from './deterministic-plan-agent.js';
+import type { GeneratorInput } from './deterministic-generator-agent.js';
+import type { MergeInput } from './llm-merge-agent.js';
+import type { EvaluatorInput } from './deterministic-evaluator-agent.js';
+import type { TaxonomyEvaluatorInput } from './deterministic-taxonomy-evaluator-agent.js';
 
 function chunkArray<T>(arr: T[], size: number): T[][] {
   const result: T[][] = [];
@@ -45,9 +38,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
   return result;
 }
 
-const PIPELINE_MAX_TOTAL_TCS = process.env.PIPELINE_MAX_TOTAL_TCS
-  ? parseInt(process.env.PIPELINE_MAX_TOTAL_TCS)
-  : 800;
+const PIPELINE_MAX_TOTAL_TCS = process.env.PIPELINE_MAX_TOTAL_TCS ? parseInt(process.env.PIPELINE_MAX_TOTAL_TCS) : 800;
 
 function failedPipelineResult(
   targetSheetName: string,
@@ -66,26 +57,24 @@ function failedPipelineResult(
       coverageGaps: [`PIPELINE_ERROR: ${message}`],
       mappingGaps: [],
     },
-    evaluationIssues: [{ type: "schema", message }],
+    evaluationIssues: [{ type: 'schema', message }],
     ...(opts?.llmJsonFailureLog ? { llmJsonFailureLog: opts.llmJsonFailureLog } : {}),
   };
 }
 
 function applyTotalTcCap(testCases: TestCase[], reason: string): TestCase[] {
   if (testCases.length <= PIPELINE_MAX_TOTAL_TCS) return testCases;
-  console.warn(
-    `[orchestrator] total TC cap applied (${reason}): ${testCases.length} -> ${PIPELINE_MAX_TOTAL_TCS}`,
-  );
+  console.warn(`[orchestrator] total TC cap applied (${reason}): ${testCases.length} -> ${PIPELINE_MAX_TOTAL_TCS}`);
   return testCases.slice(0, PIPELINE_MAX_TOTAL_TCS);
 }
 
 function emitPipelineFinished(pipelineId: string): void {
   eventBus.emit(pipelineId, {
-    agentId: "orchestrator",
-    agentType: "evaluator",
-    status: "completed",
+    agentId: 'orchestrator',
+    agentType: 'evaluator',
+    status: 'completed',
     progress: 100,
-    message: "파이프라인 종료",
+    message: '파이프라인 종료',
     timestamp: new Date().toISOString(),
     payload: { pipelineFinished: true },
   });
@@ -112,7 +101,9 @@ export async function orchestrate(
     }
     if (err instanceof LlmJsonParseError) {
       const detail = formatLlmJsonFailureForUi(err, getLlmJsonLogCharLimit());
-      process.stderr.write(`\n[orchestrator] ========== LLM JSON FAILURE (copy for debug) ==========\n${detail}\n[orchestrator] ========== END LLM JSON FAILURE ==========\n\n`);
+      process.stderr.write(
+        `\n[orchestrator] ========== LLM JSON FAILURE (copy for debug) ==========\n${detail}\n[orchestrator] ========== END LLM JSON FAILURE ==========\n\n`,
+      );
     }
     const llmLog = err instanceof LlmJsonParseError ? formatLlmJsonFailureForUi(err, 24_000) : undefined;
     const failure = failedPipelineResult(config.targetSheetName, message, { llmJsonFailureLog: llmLog });
@@ -146,14 +137,14 @@ async function runOrchestrationBody(
   };
 
   if (!env.geminiApiKey) {
-    throw new Error("Pipeline requires GEMINI_API_KEY (Taxonomy + LLM agents)");
+    throw new Error('Pipeline requires GEMINI_API_KEY (Taxonomy + LLM agents)');
   }
 
   let resolved = skillManifestToResolved(manifest);
   const { headers, dataRows } = detectHeaderAndData(raw);
   const sampleRows = dataRows.slice(0, 30);
   const maxTaxonomyRetries = 2;
-  const taxEvalAgent = getAgent<TaxonomyEvaluatorInput, TaxonomyEvaluationResult>("taxonomy-evaluator", IMPL);
+  const taxEvalAgent = getAgent<TaxonomyEvaluatorInput, TaxonomyEvaluationResult>('taxonomy-evaluator', IMPL);
 
   for (let attempt = 0; attempt <= maxTaxonomyRetries; attempt++) {
     resolved = await runTaxonomyPhase(
@@ -170,60 +161,64 @@ async function runOrchestrationBody(
 
     if (taxEvalResult.data?.passed) {
       updateAgentState(pipelineId, {
-        agentId: taxEvalResult.agentId, agentType: "taxonomy-evaluator",
-        status: "completed", progress: 100,
-        message: "Taxonomy 검증 통과", durationMs: taxEvalResult.durationMs,
+        agentId: taxEvalResult.agentId,
+        agentType: 'taxonomy-evaluator',
+        status: 'completed',
+        progress: 100,
+        message: 'Taxonomy 검증 통과',
+        durationMs: taxEvalResult.durationMs,
       });
       break;
     }
 
     const issueCount = taxEvalResult.data?.issues.length ?? 0;
-    console.log(
-      `[orchestrator] taxonomy-eval attempt ${attempt + 1}/${maxTaxonomyRetries + 1}: ${issueCount} issues`,
-    );
+    console.log(`[orchestrator] taxonomy-eval attempt ${attempt + 1}/${maxTaxonomyRetries + 1}: ${issueCount} issues`);
 
     if (attempt === maxTaxonomyRetries) {
       updateAgentState(pipelineId, {
-        agentId: taxEvalResult.agentId, agentType: "taxonomy-evaluator",
-        status: "completed", progress: 100,
+        agentId: taxEvalResult.agentId,
+        agentType: 'taxonomy-evaluator',
+        status: 'completed',
+        progress: 100,
         message: `Taxonomy 검증 미통과 (${issueCount}건), 현재 결과로 계속 진행`,
         durationMs: taxEvalResult.durationMs,
       });
-      console.warn(`[orchestrator] taxonomy-eval failed after ${maxTaxonomyRetries + 1} attempts, proceeding with current taxonomy`);
+      console.warn(
+        `[orchestrator] taxonomy-eval failed after ${maxTaxonomyRetries + 1} attempts, proceeding with current taxonomy`,
+      );
     }
   }
 
   // --- Plan ---
-  const planAgent = getAgent<PlanInput, ChecklistItem[]>("plan", IMPL);
+  const planAgent = getAgent<PlanInput, ChecklistItem[]>('plan', IMPL);
 
-  const planResult = await planAgent.run(
-    { raw, sourceSheetName, resolvedSkill: resolved },
-    eventBus,
-    agentConfig,
-  );
+  const planResult = await planAgent.run({ raw, sourceSheetName, resolvedSkill: resolved }, eventBus, agentConfig);
 
-  if (planResult.status === "failed" || !planResult.data) {
+  if (planResult.status === 'failed' || !planResult.data) {
     throw new Error(`Plan failed: ${planResult.error}`);
   }
 
   updateAgentState(pipelineId, {
-    agentId: planResult.agentId, agentType: "plan",
-    status: "completed", progress: 100,
-    message: `${planResult.data.length}건 체크리스트`, durationMs: planResult.durationMs,
+    agentId: planResult.agentId,
+    agentType: 'plan',
+    status: 'completed',
+    progress: 100,
+    message: `${planResult.data.length}건 체크리스트`,
+    durationMs: planResult.durationMs,
   });
 
   const fullChecklist = planResult.data;
   const scopedChecklist = fullChecklist;
 
   if (scopedChecklist.length === 0) {
-    throw new Error("Plan produced an empty checklist");
+    throw new Error('Plan produced an empty checklist');
   }
 
   const debugRoot = resolvePipelineDebugRoot(env.pipelineDebugDir);
   if (debugRoot) {
-    await writePipelineDebugJson(debugRoot, pipelineId, "plan/full-checklist.json", fullChecklist);
-    await writePipelineDebugJson(debugRoot, pipelineId, "plan/scoped-checklist.json", scopedChecklist);
-    await writePipelineDebugJson(debugRoot, pipelineId, "plan/meta.json", {
+    await writePipelineDebugJson(debugRoot, pipelineId, 'plan/full-checklist.json', fullChecklist);
+    await writePipelineDebugJson(debugRoot, pipelineId, 'plan/scoped-checklist.json', scopedChecklist);
+    await writePipelineDebugJson(debugRoot, pipelineId, 'plan/meta.json', {
       savedAt: new Date().toISOString(),
       pipelineId,
       domainScope: DOMAIN_SCOPE_ALL,
@@ -243,20 +238,19 @@ async function runOrchestrationBody(
   await writeHeaders(spreadsheetId, sheetName);
 
   // --- Batch loop: generator만 (Evaluator는 전체 완료 후 1회) ---
-  const genAgent = getAgent<GeneratorInput, TestCase[]>("generator", IMPL);
-  const evalAgent = getAgent<EvaluatorInput, EvaluationResult>("evaluator", IMPL);
+  const genAgent = getAgent<GeneratorInput, TestCase[]>('generator', IMPL);
+  const evalAgent = getAgent<EvaluatorInput, EvaluationResult>('evaluator', IMPL);
   const genConfig = {
     ownerDefault: config.ownerDefault,
     environmentDefault: config.environmentDefault,
     maxTcPerRequirement: config.maxTcPerRequirement,
-    highRiskMaxTcPerRequirement:
-      config.highRiskMaxTcPerRequirement ?? env.highRiskMaxTcPerRequirementDefault,
-    domainMinSetFill: config.domainMinSetFill ?? env.domainMinSetFillDefault ?? "round_robin",
+    highRiskMaxTcPerRequirement: config.highRiskMaxTcPerRequirement ?? env.highRiskMaxTcPerRequirementDefault,
+    domainMinSetFill: config.domainMinSetFill ?? env.domainMinSetFillDefault ?? 'round_robin',
   };
   const evalConfig = { ownerDefault: config.ownerDefault, environmentDefault: config.environmentDefault };
   const evaluateOptions: EvaluateOptions = {
-    evalSpecGrounding: config.evalSpecGrounding ?? env.evalSpecGroundingDefault ?? "warn",
-    evalTraceability: config.evalTraceability ?? env.evalTraceabilityDefault ?? "warn",
+    evalSpecGrounding: config.evalSpecGrounding ?? env.evalSpecGroundingDefault ?? 'warn',
+    evalTraceability: config.evalTraceability ?? env.evalTraceabilityDefault ?? 'warn',
   };
 
   const batches = chunkArray(scopedChecklist, env.llmGenBatchSize);
@@ -264,17 +258,19 @@ async function runOrchestrationBody(
   const allBatchTcs: TestCase[][] = [];
   let tcCounter = 1;
 
-  console.log(`[orchestrator] ${scopedChecklist.length}건 → ${totalBatches}배치 생성 (배치 ${env.llmGenBatchSize}건, Evaluator는 마지막 1회)`);
+  console.log(
+    `[orchestrator] ${scopedChecklist.length}건 → ${totalBatches}배치 생성 (배치 ${env.llmGenBatchSize}건, Evaluator는 마지막 1회)`,
+  );
 
   eventBus.emit(pipelineId, {
-    agentId: "orchestrator",
-    agentType: "generator",
-    status: "running",
+    agentId: 'orchestrator',
+    agentType: 'generator',
+    status: 'running',
     progress: 0,
     message: `${scopedChecklist.length}건 체크리스트 → ${totalBatches}배치 생성 중 (검증은 전체 완료 후 1회)`,
     timestamp: new Date().toISOString(),
     payload: {
-      phase: "batch_generate",
+      phase: 'batch_generate',
       batchTotal: totalBatches,
       checklistTotal: scopedChecklist.length,
       batchSize: env.llmGenBatchSize,
@@ -286,14 +282,14 @@ async function runOrchestrationBody(
     const batchLabel = `배치 ${bi + 1}/${totalBatches}`;
 
     eventBus.emit(pipelineId, {
-      agentId: "orchestrator",
-      agentType: "generator",
-      status: "running",
+      agentId: 'orchestrator',
+      agentType: 'generator',
+      status: 'running',
       progress: Math.round((bi / Math.max(totalBatches, 1)) * 55),
       message: `${batchLabel}: TC 생성 중 (${batchChecklist.length}건 체크리스트)…`,
       timestamp: new Date().toISOString(),
       payload: {
-        phase: "batch_generate",
+        phase: 'batch_generate',
         batchCurrent: bi + 1,
         batchTotal: totalBatches,
         checklistInBatch: batchChecklist.length,
@@ -307,18 +303,18 @@ async function runOrchestrationBody(
       agentConfig,
     );
 
-    if (genResult.status === "failed" || !genResult.data) {
+    if (genResult.status === 'failed' || !genResult.data) {
       throw new Error(`Generator failed at ${batchLabel}: ${genResult.error}`);
     }
 
     const batchTcs = applyTotalTcCap(genResult.data, batchLabel);
 
     for (const tc of batchTcs) {
-      tc.TC_ID = `TC-${String(tcCounter++).padStart(4, "0")}`;
+      tc.TC_ID = `TC-${String(tcCounter++).padStart(4, '0')}`;
     }
 
     if (debugRoot) {
-      const bn = String(bi + 1).padStart(3, "0");
+      const bn = String(bi + 1).padStart(3, '0');
       await writePipelineDebugJson(debugRoot, pipelineId, `generator/batch-${bn}-input.json`, {
         savedAt: new Date().toISOString(),
         batchIndex: bi + 1,
@@ -341,14 +337,14 @@ async function runOrchestrationBody(
 
     const batchProgress = Math.round(((bi + 1) / Math.max(totalBatches, 1)) * 55);
     eventBus.emit(pipelineId, {
-      agentId: "orchestrator",
-      agentType: "generator",
-      status: "running",
+      agentId: 'orchestrator',
+      agentType: 'generator',
+      status: 'running',
       progress: batchProgress,
       message: `${batchLabel}: 생성 ${batchTcs.length}건 → Sheets 기록 (누적 TC ${tcCounter - 1}건)`,
       timestamp: new Date().toISOString(),
       payload: {
-        phase: "batch_generate",
+        phase: 'batch_generate',
         batchCurrent: bi + 1,
         batchTotal: totalBatches,
         tcGeneratedThisBatch: batchTcs.length,
@@ -360,10 +356,10 @@ async function runOrchestrationBody(
   }
 
   let allTestCases = allBatchTcs.flat();
-  allTestCases = applyTotalTcCap(allTestCases, "all batches combined");
+  allTestCases = applyTotalTcCap(allTestCases, 'all batches combined');
 
   if (debugRoot) {
-    await writePipelineDebugJson(debugRoot, pipelineId, "generator/all-batches-output.json", {
+    await writePipelineDebugJson(debugRoot, pipelineId, 'generator/all-batches-output.json', {
       savedAt: new Date().toISOString(),
       testCases: allTestCases,
       totalCount: allTestCases.length,
@@ -375,14 +371,14 @@ async function runOrchestrationBody(
   let lastEvalResult: Awaited<ReturnType<typeof evalAgent.run>> | null = null;
 
   eventBus.emit(pipelineId, {
-    agentId: "orchestrator",
-    agentType: "evaluator",
-    status: "running",
+    agentId: 'orchestrator',
+    agentType: 'evaluator',
+    status: 'running',
     progress: 58,
     message: `전체 검증 시작: 체크리스트 ${scopedChecklist.length}건, TC ${allTestCases.length}건`,
     timestamp: new Date().toISOString(),
     payload: {
-      phase: "final_eval",
+      phase: 'final_eval',
       checklistTotal: scopedChecklist.length,
       totalTcCount: allTestCases.length,
       evalRound: 0,
@@ -401,7 +397,7 @@ async function runOrchestrationBody(
     agentConfig,
   );
 
-  if (evalResult.status === "failed" || !evalResult.data) {
+  if (evalResult.status === 'failed' || !evalResult.data) {
     throw new Error(`Evaluator failed (final): ${evalResult.error}`);
   }
 
@@ -409,30 +405,24 @@ async function runOrchestrationBody(
   const repairedAfterFirst = (evalResult.data as EvaluationResult & { repairedTestCases?: TestCase[] })
     .repairedTestCases;
   if (repairedAfterFirst) {
-    allTestCases = applyTotalTcCap(repairedAfterFirst, "final evaluator repair");
+    allTestCases = applyTotalTcCap(repairedAfterFirst, 'final evaluator repair');
   }
 
   let round = 1;
   const maxRounds = config.maxFallbackRounds;
 
-  while (
-    !evalResult.data.passed &&
-    evalResult.data.uncoveredItems.length > 0 &&
-    round <= maxRounds
-  ) {
-    console.log(
-      `[orchestrator] final fallback round ${round}: ${evalResult.data.uncoveredItems.length} uncovered`,
-    );
+  while (!evalResult.data.passed && evalResult.data.uncoveredItems.length > 0 && round <= maxRounds) {
+    console.log(`[orchestrator] final fallback round ${round}: ${evalResult.data.uncoveredItems.length} uncovered`);
 
     eventBus.emit(pipelineId, {
-      agentId: "orchestrator",
-      agentType: "evaluator",
-      status: "running",
+      agentId: 'orchestrator',
+      agentType: 'evaluator',
+      status: 'running',
       progress: 60 + Math.min(15, round * 5),
       message: `Fallback ${round}/${maxRounds}: 미커버 ${evalResult.data.uncoveredItems.length}건 보완 생성 중…`,
       timestamp: new Date().toISOString(),
       payload: {
-        phase: "final_fallback",
+        phase: 'final_fallback',
         uncoveredCount: evalResult.data.uncoveredItems.length,
         evalRound: round,
         maxFallbackRounds: maxRounds,
@@ -449,7 +439,7 @@ async function runOrchestrationBody(
     if (extraResult.data?.length) {
       let n = tcCounter;
       for (const tc of extraResult.data) {
-        tc.TC_ID = `TC-${String(n++).padStart(4, "0")}`;
+        tc.TC_ID = `TC-${String(n++).padStart(4, '0')}`;
       }
       tcCounter = n;
       allTestCases = applyTotalTcCap([...allTestCases, ...extraResult.data], `final fallback ${round}`);
@@ -473,8 +463,7 @@ async function runOrchestrationBody(
     if (!evalResult.data) break;
 
     lastEvalResult = evalResult;
-    const extraRepaired = (evalResult.data as EvaluationResult & { repairedTestCases?: TestCase[] })
-      .repairedTestCases;
+    const extraRepaired = (evalResult.data as EvaluationResult & { repairedTestCases?: TestCase[] }).repairedTestCases;
     if (extraRepaired) {
       allTestCases = applyTotalTcCap(extraRepaired, `final repair round ${round}`);
       await clearSheetData(spreadsheetId, sheetName);
@@ -489,9 +478,9 @@ async function runOrchestrationBody(
   await writeTestCases(spreadsheetId, sheetName, allTestCases);
 
   updateAgentState(pipelineId, {
-    agentId: lastEvalResult?.agentId ?? "evaluator",
-    agentType: "evaluator",
-    status: "completed",
+    agentId: lastEvalResult?.agentId ?? 'evaluator',
+    agentType: 'evaluator',
+    status: 'completed',
     progress: 100,
     message: `전체 검증 완료 (TC ${allTestCases.length}건, Evaluator·Fallback ${totalRounds}회)`,
     durationMs: lastEvalResult?.durationMs ?? 0,
@@ -499,19 +488,12 @@ async function runOrchestrationBody(
 
   // --- Merge (optional, 전체 TC 대상) ---
   if (config.mergeSimilarTestCases) {
-    const mergeAgent = getAgent<MergeInput, TestCase[]>("merge", IMPL);
-    const mergeResult = await mergeAgent.run(
-      { testCases: allTestCases },
-      eventBus,
-      agentConfig,
-    );
+    const mergeAgent = getAgent<MergeInput, TestCase[]>('merge', IMPL);
+    const mergeResult = await mergeAgent.run({ testCases: allTestCases }, eventBus, agentConfig);
 
     if (mergeResult.data) {
       const before = allTestCases.length;
-      allTestCases = applyTotalTcCap(
-        sortGlobalCommonTcFirstAndRenumber(mergeResult.data),
-        "merge",
-      );
+      allTestCases = applyTotalTcCap(sortGlobalCommonTcFirstAndRenumber(mergeResult.data), 'merge');
       console.log(`[orchestrator] merge: ${before} → ${allTestCases.length} TCs`);
 
       // merge 결과로 시트 덮어쓰기
@@ -520,16 +502,18 @@ async function runOrchestrationBody(
     }
 
     updateAgentState(pipelineId, {
-      agentId: mergeResult.agentId, agentType: "merge",
-      status: "completed", progress: 100,
-      message: mergeResult.data
-        ? `병합 완료 (${mergeResult.data.length}건)`
-        : "병합 스킵 (원본 유지)",
+      agentId: mergeResult.agentId,
+      agentType: 'merge',
+      status: 'completed',
+      progress: 100,
+      message: mergeResult.data ? `병합 완료 (${mergeResult.data.length}건)` : '병합 스킵 (원본 유지)',
       durationMs: mergeResult.durationMs,
     });
   }
 
-  console.log(`[orchestrator] wrote ${allTestCases.length} TCs to '${sheetName}' (${totalBatches} batches, ${totalRounds} total rounds)`);
+  console.log(
+    `[orchestrator] wrote ${allTestCases.length} TCs to '${sheetName}' (${totalBatches} batches, ${totalRounds} total rounds)`,
+  );
 
   const finalStats = lastEvalResult?.data?.stats ?? {
     totalTCs: allTestCases.length,
@@ -551,7 +535,7 @@ async function runOrchestrationBody(
   };
 
   if (debugRoot) {
-    await writePipelineDebugJson(debugRoot, pipelineId, "artifacts/pipeline-result.json", {
+    await writePipelineDebugJson(debugRoot, pipelineId, 'artifacts/pipeline-result.json', {
       savedAt: new Date().toISOString(),
       ...result,
     });

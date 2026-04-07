@@ -1,22 +1,22 @@
-import { useCallback, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Button } from "@/shared/ui/button";
-import { Card } from "@/shared/ui/card";
-import type { PipelineResult } from "../../controller/use-pipeline";
+import { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Button } from '@/shared/ui/button';
+import { Card } from '@/shared/ui/card';
+import type { PipelineResult } from '../../controller/use-pipeline';
 
 interface IssuesPanelProps {
   result: PipelineResult;
 }
 
 const ISSUE_TYPES = [
-  "schema",
-  "required_field",
-  "domain_min",
-  "coverage",
-  "duplicate",
-  "test_point_missing",
-  "spec_ungrounded",
-  "traceability_mismatch",
+  'schema',
+  'required_field',
+  'domain_min',
+  'coverage',
+  'duplicate',
+  'test_point_missing',
+  'spec_ungrounded',
+  'traceability_mismatch',
 ] as const;
 
 export function IssuesPanel({ result }: IssuesPanelProps) {
@@ -26,9 +26,7 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
   const [selected, setSelected] = useState<Set<number>>(new Set());
 
   const typeLabel = (type: string) =>
-    ISSUE_TYPES.includes(type as (typeof ISSUE_TYPES)[number])
-      ? t(`issues.type.${type}`)
-      : type;
+    ISSUE_TYPES.includes(type as (typeof ISSUE_TYPES)[number]) ? t(`issues.type.${type}`) : type;
 
   const toggleIssue = useCallback((index: number) => {
     setSelected((prev) => {
@@ -48,9 +46,9 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
   }, []);
 
   const copyPayload = useCallback(
-    async (mode: "all_issues" | "selected_issues" | "full") => {
+    async (mode: 'all_issues' | 'selected_issues' | 'full') => {
       const payload =
-        mode === "full"
+        mode === 'full'
           ? {
               exportedAt: new Date().toISOString(),
               sheetName: result.sheetName,
@@ -64,9 +62,7 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
               sheetName: result.sheetName,
               success: result.success,
               evaluationIssues:
-                mode === "all_issues"
-                  ? evaluationIssues
-                  : evaluationIssues.filter((_, i) => selected.has(i)),
+                mode === 'all_issues' ? evaluationIssues : evaluationIssues.filter((_, i) => selected.has(i)),
             };
 
       try {
@@ -81,7 +77,7 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
   if (evaluationIssues.length === 0 && !hasGaps) {
     return (
       <Card className="border-success/30 bg-success/5">
-        <p className="text-sm font-medium text-success">{t("issues.allPassed")}</p>
+        <p className="text-success text-sm font-medium">{t('issues.allPassed')}</p>
       </Card>
     );
   }
@@ -90,40 +86,38 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
     <div className="space-y-4">
       {(evaluationIssues.length > 0 || hasGaps) && (
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="button" variant="secondary" className="text-xs" onClick={() => void copyPayload("full")}>
-            {t("issues.copyFullJson")}
+          <Button type="button" variant="secondary" className="text-xs" onClick={() => void copyPayload('full')}>
+            {t('issues.copyFullJson')}
           </Button>
           {evaluationIssues.length > 0 && (
             <>
-              <Button type="button" variant="ghost" className="text-xs" onClick={() => void copyPayload("all_issues")}>
-                {t("issues.copyAllIssuesJson")}
+              <Button type="button" variant="ghost" className="text-xs" onClick={() => void copyPayload('all_issues')}>
+                {t('issues.copyAllIssuesJson')}
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 className="text-xs"
-                onClick={() => void copyPayload("selected_issues")}
+                onClick={() => void copyPayload('selected_issues')}
                 disabled={selected.size === 0}
               >
-                {t("issues.copySelectedIssuesJson")}
+                {t('issues.copySelectedIssuesJson')}
               </Button>
               <Button type="button" variant="ghost" className="text-xs" onClick={selectAllIssues}>
-                {t("issues.selectAll")}
+                {t('issues.selectAll')}
               </Button>
               <Button type="button" variant="ghost" className="text-xs" onClick={clearSelection}>
-                {t("issues.clearSelection")}
+                {t('issues.clearSelection')}
               </Button>
             </>
           )}
-          <p className="text-xs text-zinc-500">{t("issues.triageHint")}</p>
+          <p className="text-xs text-zinc-500">{t('issues.triageHint')}</p>
         </div>
       )}
 
       {evaluationIssues.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold text-zinc-700">
-            Evaluation Issues ({evaluationIssues.length})
-          </h3>
+          <h3 className="mb-3 text-sm font-semibold text-zinc-700">Evaluation Issues ({evaluationIssues.length})</h3>
           <ul className="space-y-1.5 text-sm">
             {evaluationIssues.slice(0, 50).map((issue, i) => (
               <li key={i} className="flex items-start gap-2">
@@ -132,7 +126,7 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
                   className="mt-1.5 h-3.5 w-3.5 shrink-0 rounded border-zinc-300"
                   checked={selected.has(i)}
                   onChange={() => toggleIssue(i)}
-                  aria-label={t("issues.selectIssue", { index: i + 1 })}
+                  aria-label={t('issues.selectIssue', { index: i + 1 })}
                 />
                 <span className="mt-0.5 shrink-0 rounded bg-zinc-100 px-1.5 py-0.5 text-xs font-medium">
                   {typeLabel(issue.type)}
@@ -142,7 +136,7 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
             ))}
             {evaluationIssues.length > 50 && (
               <li className="text-xs text-zinc-400">
-                {t("issues.moreItems", { count: evaluationIssues.length - 50 })}
+                {t('issues.moreItems', { count: evaluationIssues.length - 50 })}
               </li>
             )}
           </ul>
@@ -151,9 +145,7 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
 
       {stats.coverageGaps.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold text-warning">
-            Coverage Gap ({stats.coverageGaps.length})
-          </h3>
+          <h3 className="text-warning mb-3 text-sm font-semibold">Coverage Gap ({stats.coverageGaps.length})</h3>
           <ul className="space-y-1 text-sm text-zinc-600">
             {stats.coverageGaps.map((gap, i) => (
               <li key={i}>{gap}</li>
@@ -164,15 +156,13 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
 
       {stats.mappingGaps.length > 0 && (
         <Card>
-          <h3 className="mb-3 text-sm font-semibold text-zinc-500">
-            Mapping Gap ({stats.mappingGaps.length})
-          </h3>
+          <h3 className="mb-3 text-sm font-semibold text-zinc-500">Mapping Gap ({stats.mappingGaps.length})</h3>
           <ul className="space-y-1 text-sm text-zinc-500">
             {stats.mappingGaps.slice(0, 10).map((gap, i) => (
               <li key={i}>{gap}</li>
             ))}
             {stats.mappingGaps.length > 10 && (
-              <li className="text-xs">{t("issues.moreItems", { count: stats.mappingGaps.length - 10 })}</li>
+              <li className="text-xs">{t('issues.moreItems', { count: stats.mappingGaps.length - 10 })}</li>
             )}
           </ul>
         </Card>
@@ -180,10 +170,10 @@ export function IssuesPanel({ result }: IssuesPanelProps) {
 
       {result.llmJsonFailureLog ? (
         <Card className="border-warning/40">
-          <h3 className="mb-2 text-sm font-semibold text-warning">
-            {t("issues.llmJsonDebugTitle", "LLM JSON 디버그 (서버 동일 로그)")}
+          <h3 className="text-warning mb-2 text-sm font-semibold">
+            {t('issues.llmJsonDebugTitle', 'LLM JSON 디버그 (서버 동일 로그)')}
           </h3>
-          <pre className="max-h-96 overflow-auto whitespace-pre-wrap break-all rounded-md bg-zinc-950 p-3 text-xs text-zinc-100">
+          <pre className="max-h-96 overflow-auto rounded-md bg-zinc-950 p-3 text-xs break-all whitespace-pre-wrap text-zinc-100">
             {result.llmJsonFailureLog}
           </pre>
         </Card>

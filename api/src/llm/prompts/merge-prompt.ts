@@ -1,4 +1,4 @@
-import type { TestCase } from "../../types/tc.js";
+import type { TestCase } from '../../types/tc.js';
 
 export function buildMergePrompt(testCases: TestCase[], domain: string): string {
   const tcJson = testCases.map((tc) => ({

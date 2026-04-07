@@ -1,5 +1,5 @@
-import { type InputHTMLAttributes } from "react";
-import { cn } from "@/shared/lib/utils";
+import { type InputHTMLAttributes } from 'react';
+import { cn } from '@/shared/lib/utils';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -16,7 +16,7 @@ export function Input({ label, className, id, ...props }: InputProps) {
       <input
         id={id}
         className={cn(
-          "rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors placeholder:text-zinc-400 focus:border-accent focus:ring-1 focus:ring-accent",
+          'border-border focus:border-accent focus:ring-accent rounded-md border bg-white px-3 py-2 text-sm shadow-sm transition-colors outline-none placeholder:text-zinc-400 focus:ring-1',
           className,
         )}
         {...props}

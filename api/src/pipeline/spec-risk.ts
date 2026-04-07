@@ -1,13 +1,11 @@
-import type { ChecklistItem, SpecRiskTier, TcType } from "../types/tc.js";
+import type { ChecklistItem, SpecRiskTier, TcType } from '../types/tc.js';
 
 export type { SpecRiskTier };
 
 /** 기능명·설명·사전조건을 합쳐 리스크 판별용 문자열을 만든다. */
-export function combinedTextForRisk(
-  item: Pick<ChecklistItem, "feature" | "description" | "precondition">,
-): string {
-  const p = item.precondition?.trim() ?? "";
-  return `${item.feature} ${item.description} ${p}`.replace(/\s+/g, " ").trim();
+export function combinedTextForRisk(item: Pick<ChecklistItem, 'feature' | 'description' | 'precondition'>): string {
+  const p = item.precondition?.trim() ?? '';
+  return `${item.feature} ${item.description} ${p}`.replace(/\s+/g, ' ').trim();
 }
 
 /**
@@ -24,11 +22,11 @@ const HIGH_TIER_PATTERNS: readonly RegExp[] = [
 ];
 
 export function inferSpecRiskTier(combinedText: string): SpecRiskTier {
-  if (!combinedText.trim()) return "standard";
+  if (!combinedText.trim()) return 'standard';
   for (const re of HIGH_TIER_PATTERNS) {
-    if (re.test(combinedText)) return "high";
+    if (re.test(combinedText)) return 'high';
   }
-  return "standard";
+  return 'standard';
 }
 
 export interface HighRiskExtraTemplate {
@@ -49,10 +47,9 @@ const EXTRA_RULES: readonly ExtraRule[] = [
     pattern: /거래\s*내역|판매\s*(된|수)|구매\s*내역|이미\s*판매|거래\s*기록/i,
     templates: [
       {
-        pointType: "거래이력제약",
-        intent:
-          "거래·판매 이력이 있는 경우 스펙에 따른 필드 비활성·저장 차단·안내 문구가 적용된다",
-        suggestedTcType: "Negative",
+        pointType: '거래이력제약',
+        intent: '거래·판매 이력이 있는 경우 스펙에 따른 필드 비활성·저장 차단·안내 문구가 적용된다',
+        suggestedTcType: 'Negative',
         required: true,
       },
     ],
@@ -61,9 +58,9 @@ const EXTRA_RULES: readonly ExtraRule[] = [
     pattern: /VAT|부가세|공급가|판매가|과세|0\s*원\s*입력|0원\s*입력|0원.*불가/i,
     templates: [
       {
-        pointType: "금액과세검증",
-        intent: "스펙의 금액·과세·0원 불가 등 규칙이 입력·저장·표시에 반영된다",
-        suggestedTcType: "Boundary",
+        pointType: '금액과세검증',
+        intent: '스펙의 금액·과세·0원 불가 등 규칙이 입력·저장·표시에 반영된다',
+        suggestedTcType: 'Boundary',
         required: false,
       },
     ],
@@ -72,9 +69,9 @@ const EXTRA_RULES: readonly ExtraRule[] = [
     pattern: /가입\s*인원|인원\s*제한|제한\s*필요\s*명수|제한\s*명수|이미\s*판매\s*된\s*개수|판매\s*된\s*개수/i,
     templates: [
       {
-        pointType: "인원제한하한",
-        intent: "가입 인원 제한 값이 스펙(판매 수 대비 하한 등)에 맞게 검증된다",
-        suggestedTcType: "Negative",
+        pointType: '인원제한하한',
+        intent: '가입 인원 제한 값이 스펙(판매 수 대비 하한 등)에 맞게 검증된다',
+        suggestedTcType: 'Negative',
         required: false,
       },
     ],
@@ -83,9 +80,9 @@ const EXTRA_RULES: readonly ExtraRule[] = [
     pattern: /리워드|D&D|드래그\s*앤|순서\s*변경/i,
     templates: [
       {
-        pointType: "리워드순서",
-        intent: "리워드 항목 추가·순서 변경(D&D)이 스펙대로 동작하고 저장 시 반영된다",
-        suggestedTcType: "Functional",
+        pointType: '리워드순서',
+        intent: '리워드 항목 추가·순서 변경(D&D)이 스펙대로 동작하고 저장 시 반영된다',
+        suggestedTcType: 'Functional',
         required: false,
       },
     ],

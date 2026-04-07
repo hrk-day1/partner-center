@@ -1,17 +1,17 @@
-import crypto from "node:crypto";
-import { z } from "zod";
-import type { ChecklistItem, TestCase } from "../types/tc.js";
-import { TC_TYPES } from "../types/tc.js";
-import type { EvaluationResult } from "../types/pipeline.js";
-import { evaluate } from "../pipeline/evaluator.js";
-import { generateJson } from "../llm/gemini-client.js";
-import { buildRepairPrompt } from "../llm/prompts/evaluator-prompt.js";
-import { expandKeys, TC_KEY_MAP } from "../llm/key-mapping.js";
-import { enrichTestCasesFromChecklist } from "../pipeline/tc-enrich.js";
-import type { Agent } from "./registry.js";
-import type { AgentResult, SubAgentConfig } from "./types.js";
-import type { eventBus } from "./event-bus.js";
-import type { EvaluatorInput } from "./deterministic-evaluator-agent.js";
+import crypto from 'node:crypto';
+import { z } from 'zod';
+import type { TestCase } from '../types/tc.js';
+import { TC_TYPES } from '../types/tc.js';
+import type { EvaluationResult } from '../types/pipeline.js';
+import { evaluate } from '../pipeline/evaluator.js';
+import { generateJson } from '../llm/gemini-client.js';
+import { buildRepairPrompt } from '../llm/prompts/evaluator-prompt.js';
+import { expandKeys, TC_KEY_MAP } from '../llm/key-mapping.js';
+import { enrichTestCasesFromChecklist } from '../pipeline/tc-enrich.js';
+import type { Agent } from './registry.js';
+import type { AgentResult, SubAgentConfig } from './types.js';
+import type { eventBus } from './event-bus.js';
+import type { EvaluatorInput } from './deterministic-evaluator-agent.js';
 
 const MAX_REPAIR_ROUNDS = 2;
 const REPAIR_MAX_NEW_PER_ROUND = process.env.LLM_REPAIR_MAX_NEW_PER_ROUND
@@ -22,13 +22,13 @@ const REPAIR_MAX_PER_REQUIREMENT = process.env.LLM_REPAIR_MAX_PER_REQUIREMENT
   : 2;
 
 function splitRequirementIds(raw: string): string[] {
-  return raw.split(",").map((id) => id.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
 }
 
-function guardRepairCandidates(
-  existingTcs: TestCase[],
-  candidates: TestCase[],
-): TestCase[] {
+function guardRepairCandidates(existingTcs: TestCase[], candidates: TestCase[]): TestCase[] {
   const reqCounts = new Map<string, number>();
   for (const tc of existingTcs) {
     for (const reqId of splitRequirementIds(tc.Requirement_ID)) {
@@ -62,8 +62,8 @@ const CompactRepairResponseSchema = z.object({
       [rm.Test_Steps]: z.string(),
       [rm.Test_Data]: z.string(),
       [rm.Expected_Result]: z.string(),
-      [rm.Priority]: z.enum(["P0", "P1", "P2"]),
-      [rm.Severity]: z.enum(["S1", "S2", "S3"]),
+      [rm.Priority]: z.enum(['P0', 'P1', 'P2']),
+      [rm.Severity]: z.enum(['S1', 'S2', 'S3']),
       [rm.Type]: z.enum(TC_TYPES as unknown as [string, ...string[]]),
       [rm.Environment]: z.string().optional(),
       [rm.Owner]: z.string().optional(),
@@ -77,7 +77,7 @@ const CompactRepairResponseSchema = z.object({
 });
 
 export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult> {
-  readonly type = "evaluator" as const;
+  readonly type = 'evaluator' as const;
 
   async run(
     input: EvaluatorInput,
@@ -89,24 +89,27 @@ export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult
     let allTcs = [...input.testCases];
 
     bus.emit(config.pipelineId, {
-      agentId, agentType: "evaluator", status: "running", progress: 0,
-      message: "규칙 게이트 검증 중...", timestamp: new Date().toISOString(),
+      agentId,
+      agentType: 'evaluator',
+      status: 'running',
+      progress: 0,
+      message: '규칙 게이트 검증 중...',
+      timestamp: new Date().toISOString(),
     });
 
     try {
       let evalResult = evaluate(input.checklist, allTcs, input.resolvedSkill, input.evaluateOptions);
       let round = 0;
 
-      while (
-        !evalResult.passed &&
-        evalResult.uncoveredItems.length > 0 &&
-        round < MAX_REPAIR_ROUNDS
-      ) {
+      while (!evalResult.passed && evalResult.uncoveredItems.length > 0 && round < MAX_REPAIR_ROUNDS) {
         round++;
         const progress = Math.round((round / (MAX_REPAIR_ROUNDS + 1)) * 80);
 
         bus.emit(config.pipelineId, {
-          agentId, agentType: "evaluator", status: "running", progress,
+          agentId,
+          agentType: 'evaluator',
+          status: 'running',
+          progress,
           message: `LLM 수정 라운드 ${round}/${MAX_REPAIR_ROUNDS}...`,
           timestamp: new Date().toISOString(),
         });
@@ -137,8 +140,11 @@ export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult
       }
 
       bus.emit(config.pipelineId, {
-        agentId, agentType: "evaluator", status: "completed", progress: 100,
-        message: `검증 완료: ${evalResult.passed ? "통과" : `이슈 ${evalResult.issues.length}건`} (repair ${round}회)`,
+        agentId,
+        agentType: 'evaluator',
+        status: 'completed',
+        progress: 100,
+        message: `검증 완료: ${evalResult.passed ? '통과' : `이슈 ${evalResult.issues.length}건`} (repair ${round}회)`,
         timestamp: new Date().toISOString(),
         payload: { repairRounds: round, finalTcCount: allTcs.length },
       });
@@ -146,24 +152,33 @@ export class LlmEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult
       (evalResult as EvaluationResult & { repairedTestCases?: TestCase[] }).repairedTestCases = allTcs;
 
       return {
-        agentId, agentType: "evaluator", status: "completed",
-        data: evalResult, durationMs: Date.now() - start,
+        agentId,
+        agentType: 'evaluator',
+        status: 'completed',
+        data: evalResult,
+        durationMs: Date.now() - start,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.warn(`[llm-eval] LLM repair failed, returning rule-only result: ${message}`);
 
       const evalResult = evaluate(input.checklist, allTcs, input.resolvedSkill, input.evaluateOptions);
 
       bus.emit(config.pipelineId, {
-        agentId, agentType: "evaluator", status: "completed", progress: 100,
+        agentId,
+        agentType: 'evaluator',
+        status: 'completed',
+        progress: 100,
         message: `규칙 검증만 완료 (LLM repair 실패): 이슈 ${evalResult.issues.length}건`,
         timestamp: new Date().toISOString(),
       });
 
       return {
-        agentId, agentType: "evaluator", status: "completed",
-        data: evalResult, durationMs: Date.now() - start,
+        agentId,
+        agentType: 'evaluator',
+        status: 'completed',
+        data: evalResult,
+        durationMs: Date.now() - start,
       };
     }
   }

@@ -1,17 +1,22 @@
-import type { ChecklistItem, TestCase } from "../types/tc.js";
+import type { ChecklistItem, TestCase } from '../types/tc.js';
 
 function isBlank(s: string | undefined): boolean {
-  return s == null || String(s).trim() === "";
+  return s == null || String(s).trim() === '';
 }
 
 /** Traceability "R12" / "R 12" → 원본 시트 행 번호 */
 export function parseTraceabilitySourceRow(traceability: string): number | null {
-  const m = String(traceability ?? "").trim().match(/^R\s*(\d+)$/i);
+  const m = String(traceability ?? '')
+    .trim()
+    .match(/^R\s*(\d+)$/i);
   return m ? parseInt(m[1]!, 10) : null;
 }
 
 function splitRequirementIds(raw: string): string[] {
-  return raw.split(",").map((id) => id.trim()).filter(Boolean);
+  return raw
+    .split(',')
+    .map((id) => id.trim())
+    .filter(Boolean);
 }
 
 export interface TcEnrichDefaults {
@@ -65,14 +70,14 @@ export function enrichTestCasesFromChecklist(
         }
       }
       if (isBlank(feature)) {
-        feature = "UNKNOWN_FEATURE";
+        feature = 'UNKNOWN_FEATURE';
       }
     }
 
     const environment = isBlank(tc.Environment) ? defaults.environmentDefault : tc.Environment;
     const owner = isBlank(tc.Owner) ? defaults.ownerDefault : tc.Owner;
-    const status = isBlank(tc.Status) ? "Draft" : tc.Status;
-    const automationCandidate = isBlank(tc.Automation_Candidate) ? "N" : tc.Automation_Candidate;
+    const status = isBlank(tc.Status) ? 'Draft' : tc.Status;
+    const automationCandidate = isBlank(tc.Automation_Candidate) ? 'N' : tc.Automation_Candidate;
 
     return {
       ...tc,

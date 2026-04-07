@@ -1,5 +1,5 @@
-import { type SelectHTMLAttributes } from "react";
-import { cn } from "@/shared/lib/utils";
+import { type SelectHTMLAttributes } from 'react';
+import { cn } from '@/shared/lib/utils';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
@@ -17,7 +17,7 @@ export function Select({ label, options, className, id, ...props }: SelectProps)
       <select
         id={id}
         className={cn(
-          "rounded-md border border-border bg-white px-3 py-2 text-sm shadow-sm outline-none transition-colors focus:border-accent focus:ring-1 focus:ring-accent",
+          'border-border focus:border-accent focus:ring-accent rounded-md border bg-white px-3 py-2 text-sm shadow-sm transition-colors outline-none focus:ring-1',
           className,
         )}
         {...props}

@@ -1,6 +1,6 @@
-export type AgentType = "taxonomy" | "taxonomy-evaluator" | "plan" | "generator" | "merge" | "evaluator";
-export type AgentStatus = "pending" | "running" | "completed" | "failed";
-export type Implementation = "deterministic" | "llm";
+export type AgentType = 'taxonomy' | 'taxonomy-evaluator' | 'plan' | 'generator' | 'merge' | 'evaluator';
+export type AgentStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type Implementation = 'deterministic' | 'llm';
 
 export interface AgentEvent {
   agentId: string;
@@ -15,7 +15,7 @@ export interface AgentEvent {
 export interface AgentResult<T> {
   agentId: string;
   agentType: AgentType;
-  status: "completed" | "failed";
+  status: 'completed' | 'failed';
   data: T | null;
   error?: string;
   durationMs: number;

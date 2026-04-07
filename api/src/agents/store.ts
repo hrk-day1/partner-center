@@ -1,13 +1,10 @@
-import type { AgentState, PipelineExecution } from "./types.js";
+import type { AgentState, PipelineExecution } from './types.js';
 
 const TTL_MS = 30 * 60 * 1000;
 
 const executions = new Map<string, PipelineExecution>();
 
-export function createExecution(
-  pipelineId: string,
-  config: Record<string, unknown>,
-): PipelineExecution {
+export function createExecution(pipelineId: string, config: Record<string, unknown>): PipelineExecution {
   const execution: PipelineExecution = {
     pipelineId,
     config,
@@ -22,10 +19,7 @@ export function getExecution(pipelineId: string): PipelineExecution | undefined 
   return executions.get(pipelineId);
 }
 
-export function updateAgentState(
-  pipelineId: string,
-  state: AgentState,
-): void {
+export function updateAgentState(pipelineId: string, state: AgentState): void {
   const exec = executions.get(pipelineId);
   if (!exec) return;
 
@@ -37,10 +31,7 @@ export function updateAgentState(
   }
 }
 
-export function completeExecution(
-  pipelineId: string,
-  result: unknown,
-): void {
+export function completeExecution(pipelineId: string, result: unknown): void {
   const exec = executions.get(pipelineId);
   if (!exec) return;
   exec.result = result;

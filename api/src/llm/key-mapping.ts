@@ -6,37 +6,37 @@
 export type KeyMap = Record<string, string>;
 
 export const PLAN_KEY_MAP: KeyMap = {
-  id: "i",
-  requirementId: "ri",
-  feature: "f",
-  domain: "d",
-  description: "ds",
-  sourceRow: "sr",
-  sourceSheet: "ss",
-  covered: "cv",
-  featureTypes: "ft",
-  precondition: "pc",
-  categoryPath: "cp",
+  id: 'i',
+  requirementId: 'ri',
+  feature: 'f',
+  domain: 'd',
+  description: 'ds',
+  sourceRow: 'sr',
+  sourceSheet: 'ss',
+  covered: 'cv',
+  featureTypes: 'ft',
+  precondition: 'pc',
+  categoryPath: 'cp',
 };
 
 export const TC_KEY_MAP: KeyMap = {
-  TC_ID: "ti",
-  Feature: "f",
-  Requirement_ID: "ri",
-  Scenario: "sc",
-  Precondition: "pc",
-  Test_Steps: "ts",
-  Test_Data: "td",
-  Expected_Result: "er",
-  Priority: "pr",
-  Severity: "sv",
-  Type: "tp",
-  Environment: "ev",
-  Owner: "ow",
-  Status: "st",
-  Automation_Candidate: "ac",
-  Traceability: "tr",
-  Notes: "n",
+  TC_ID: 'ti',
+  Feature: 'f',
+  Requirement_ID: 'ri',
+  Scenario: 'sc',
+  Precondition: 'pc',
+  Test_Steps: 'ts',
+  Test_Data: 'td',
+  Expected_Result: 'er',
+  Priority: 'pr',
+  Severity: 'sv',
+  Type: 'tp',
+  Environment: 'ev',
+  Owner: 'ow',
+  Status: 'st',
+  Automation_Candidate: 'ac',
+  Traceability: 'tr',
+  Notes: 'n',
 };
 
 function invertMap(map: KeyMap): KeyMap {
@@ -50,10 +50,7 @@ function invertMap(map: KeyMap): KeyMap {
 /**
  * 축약 키로 된 객체 배열을 원래 키로 복원한다.
  */
-export function expandKeys<T>(
-  compactArray: Record<string, unknown>[],
-  keyMap: KeyMap,
-): T[] {
+export function expandKeys<T>(compactArray: Record<string, unknown>[], keyMap: KeyMap): T[] {
   const inv = invertMap(keyMap);
   return compactArray.map((item) => {
     const expanded: Record<string, unknown> = {};
@@ -69,7 +66,7 @@ export function expandKeys<T>(
  * 예: "ti, f, ri, sc, pc, ts, td, er, pr, sv, tp, ev, ow, st, ac, tr, n"
  */
 export function compactFieldList(keyMap: KeyMap): string {
-  return Object.values(keyMap).join(", ");
+  return Object.values(keyMap).join(', ');
 }
 
 /**
@@ -79,5 +76,5 @@ export function compactFieldList(keyMap: KeyMap): string {
 export function keyMappingTable(keyMap: KeyMap): string {
   return Object.entries(keyMap)
     .map(([full, short]) => `${short} = ${full}`)
-    .join(", ");
+    .join(', ');
 }

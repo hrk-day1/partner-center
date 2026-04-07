@@ -1,17 +1,17 @@
-import type { TcType } from "../types/tc.js";
-import { DOMAINS, TC_TYPES } from "../types/tc.js";
-import type { SkillManifest, TcTemplate, PolicyHint } from "./types.js";
+import type { TcType } from '../types/tc.js';
+import { DOMAINS, TC_TYPES } from '../types/tc.js';
+import type { SkillManifest, TcTemplate, PolicyHint } from './types.js';
 
 export interface ResolvedPriorityRule {
   domain: string;
   types: TcType[];
-  priority: "P0" | "P1" | "P2";
+  priority: 'P0' | 'P1' | 'P2';
 }
 
 export interface ResolvedSeverityRule {
   domain: string;
   types: TcType[];
-  severity: "S1" | "S2" | "S3";
+  severity: 'S1' | 'S2' | 'S3';
 }
 
 /** 런타임 스킬: preset JSON 또는 Taxonomy 결과를 문자열 도메인 키로 통일 */
@@ -43,7 +43,7 @@ export function skillManifestToResolved(manifest: SkillManifest): ResolvedSkill 
     name: manifest.name,
     description: manifest.description,
     domainOrder,
-    fallbackDomain: "Admin",
+    fallbackDomain: 'Admin',
     domainKeywords: Object.fromEntries(
       domainOrder.map((d) => [d, manifest.domainKeywords[d as keyof typeof manifest.domainKeywords] ?? []]),
     ),
@@ -58,8 +58,7 @@ export function skillManifestToResolved(manifest: SkillManifest): ResolvedSkill 
     domainMinSets: Object.fromEntries(
       domainOrder.map((d) => [
         d,
-        manifest.domainMinSets[d as keyof typeof manifest.domainMinSets] ??
-          ({} as Record<TcType, number>),
+        manifest.domainMinSets[d as keyof typeof manifest.domainMinSets] ?? ({} as Record<TcType, number>),
       ]),
     ),
     priorityRules: manifest.priorityRules.map((r) => ({
@@ -84,9 +83,7 @@ export interface TaxonomyDomainPayload {
 }
 
 function normalizeMinSet(partial?: Partial<Record<TcType, number>>): Record<TcType, number> {
-  return Object.fromEntries(
-    TC_TYPES.map((t) => [t, partial?.[t] ?? 0]),
-  ) as Record<TcType, number>;
+  return Object.fromEntries(TC_TYPES.map((t) => [t, partial?.[t] ?? 0])) as Record<TcType, number>;
 }
 
 /** Hybrid taxonomy: preset resolved를 유지하면서 키워드 보강 + 새 도메인 추가 */
@@ -163,7 +160,7 @@ export function mergeTaxonomyIntoResolved(
 ): ResolvedSkill {
   const baseResolved = skillManifestToResolved(base);
   if (taxonomy.domains.length === 0) {
-    throw new Error("Taxonomy returned no domains");
+    throw new Error('Taxonomy returned no domains');
   }
 
   const domainOrder = taxonomy.domains.map((d) => d.id) as readonly string[];

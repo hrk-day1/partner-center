@@ -1,9 +1,9 @@
-const BASE_URL = "/api";
+const BASE_URL = '/api';
 
 export interface AgentEvent {
   agentId: string;
-  agentType: "taxonomy" | "taxonomy-evaluator" | "plan" | "generator" | "merge" | "evaluator";
-  status: "pending" | "running" | "completed" | "failed";
+  agentType: 'taxonomy' | 'taxonomy-evaluator' | 'plan' | 'generator' | 'merge' | 'evaluator';
+  status: 'pending' | 'running' | 'completed' | 'failed';
   progress: number;
   message: string;
   timestamp: string;
@@ -23,18 +23,18 @@ function openEventSource(
     try {
       const data = JSON.parse(e.data) as Record<string, unknown>;
 
-      if (data.type === "pipeline_complete") {
+      if (data.type === 'pipeline_complete') {
         finished = true;
         onComplete?.(data.result);
         es.close();
         return;
       }
 
-      if (data.type === "connected") {
+      if (data.type === 'connected') {
         return;
       }
 
-      if (typeof data.agentType === "string") {
+      if (typeof data.agentType === 'string') {
         onEvent(data as unknown as AgentEvent);
       }
     } catch {

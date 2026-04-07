@@ -4,7 +4,25 @@
   "description": "인증/보안 도메인에 집중하여 Security/Negative TC를 강화한 정책 프리셋. Auth 최소 세트를 높이고, 전체 도메인의 Security TC를 보강한다.",
   "domainKeywords": {
     "Payment": ["pay", "payment", "refund", "invoice", "billing", "결제", "환불", "정산", "주문"],
-    "Auth": ["login", "auth", "token", "mfa", "password", "인증", "로그인", "세션", "비밀번호", "oauth", "sso", "2fa", "otp", "jwt", "쿠키", "cookie", "session"],
+    "Auth": [
+      "login",
+      "auth",
+      "token",
+      "mfa",
+      "password",
+      "인증",
+      "로그인",
+      "세션",
+      "비밀번호",
+      "oauth",
+      "sso",
+      "2fa",
+      "otp",
+      "jwt",
+      "쿠키",
+      "cookie",
+      "session"
+    ],
     "Content": ["post", "포스트", "콘텐츠", "게시물", "미디어", "에디터", "썸네일"],
     "Membership": ["membership", "멤버십", "구독", "상품", "subscription"],
     "Community": ["comment", "댓글", "커뮤니티", "신고", "게시판", "대댓글"],
@@ -12,8 +30,16 @@
     "Admin": ["admin", "role", "permission", "console", "운영", "권한", "관리자"]
   },
   "policyHints": [
-    { "domain": "_common", "hint": "templates/commonTemplates의 steps와 생성 TC의 Test_Steps에는 로그인·메뉴 이동·단순 화면 진입 문구를 매번 넣지 말 것. 계정·역할·초기 화면은 precondition에만 기술한다", "riskLevel": "low" },
-    { "domain": "_common", "hint": "화면이 존재하는 기능은 읽기전용 계정의 쓰기 차단을 검증해야 한다", "riskLevel": "high" },
+    {
+      "domain": "_common",
+      "hint": "templates/commonTemplates의 steps와 생성 TC의 Test_Steps에는 로그인·메뉴 이동·단순 화면 진입 문구를 매번 넣지 말 것. 계정·역할·초기 화면은 precondition에만 기술한다",
+      "riskLevel": "low"
+    },
+    {
+      "domain": "_common",
+      "hint": "화면이 존재하는 기능은 읽기전용 계정의 쓰기 차단을 검증해야 한다",
+      "riskLevel": "high"
+    },
     { "domain": "_common", "hint": "CRUD 기능은 필수값 누락 시 저장 실패 검증이 필요하다", "riskLevel": "medium" },
     { "domain": "Auth", "hint": "변조 토큰(JWT)으로 API 호출 시 차단되어야 한다", "riskLevel": "high" },
     { "domain": "Auth", "hint": "연속 로그인 실패 시 계정 잠금 정책이 동작해야 한다", "riskLevel": "high" },
@@ -21,7 +47,11 @@
     { "domain": "Auth", "hint": "XSS 페이로드 입력이 무해화(이스케이프) 처리되어야 한다", "riskLevel": "high" },
     { "domain": "Auth", "hint": "SSO/OAuth 외부 인증 연동 시 콜백 처리를 검증해야 한다", "riskLevel": "medium" },
     { "domain": "Auth", "hint": "탈퇴/비활성 계정의 로그인이 차단되어야 한다", "riskLevel": "medium" },
-    { "domain": "Auth", "hint": "동시 세션 제한 초과 시 기존 세션 만료 또는 신규 차단을 검증해야 한다", "riskLevel": "medium" },
+    {
+      "domain": "Auth",
+      "hint": "동시 세션 제한 초과 시 기존 세션 만료 또는 신규 차단을 검증해야 한다",
+      "riskLevel": "medium"
+    },
     { "domain": "Auth", "hint": "OTP/인증코드 유효시간 경계에서 만료 처리를 검증해야 한다", "riskLevel": "medium" },
     { "domain": "Payment", "hint": "결제 금액 변조 차단과 멱등키 중복 요청 방지를 검증해야 한다", "riskLevel": "high" },
     { "domain": "Payment", "hint": "승인-취소-환불 상태 전이와 웹훅 수신 처리를 검증해야 한다", "riskLevel": "high" }

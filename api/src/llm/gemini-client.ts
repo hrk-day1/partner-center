@@ -1,8 +1,8 @@
-import { GoogleGenerativeAI, type GenerationConfig } from "@google/generative-ai";
-import JSON5 from "json5";
-import { jsonrepair } from "jsonrepair";
-import { z, type ZodSchema } from "zod";
-import { env } from "../config/env.js";
+import { GoogleGenerativeAI, type GenerationConfig } from '@google/generative-ai';
+import JSON5 from 'json5';
+import { jsonrepair } from 'jsonrepair';
+import type { ZodSchema } from 'zod';
+import { env } from '../config/env.js';
 
 const MAX_RETRIES = 2;
 const SELF_REPAIR_RETRIES = 1;
@@ -26,7 +26,7 @@ export class LlmJsonParseError extends Error {
 
   constructor(message: string, rawModelText: string, extractedJson: string, cause?: unknown) {
     super(message, cause !== undefined ? { cause } : undefined);
-    this.name = "LlmJsonParseError";
+    this.name = 'LlmJsonParseError';
     this.rawModelText = rawModelText;
     this.extractedJson = extractedJson;
   }
@@ -49,9 +49,9 @@ export function formatLlmJsonFailureForUi(err: LlmJsonParseError, maxTotal = 24_
   if (pos !== null && ex.length > 0) {
     const lo = Math.max(0, pos - 400);
     const hi = Math.min(ex.length, pos + 400);
-    parts.push("--- Around error (extracted) ---\n");
+    parts.push('--- Around error (extracted) ---\n');
     parts.push(ex.slice(lo, hi));
-    parts.push("\n\n");
+    parts.push('\n\n');
   }
 
   parts.push(`--- Extracted full (${ex.length} chars) ---\n`);
@@ -60,7 +60,7 @@ export function formatLlmJsonFailureForUi(err: LlmJsonParseError, maxTotal = 24_
   } else {
     parts.push(`${ex.slice(0, 9000)}\n... [${ex.length - 13_000} chars omitted] ...\n${ex.slice(-4000)}`);
   }
-  parts.push("\n\n");
+  parts.push('\n\n');
 
   const raw = err.rawModelText;
   parts.push(`--- Raw model (${raw.length} chars, head/tail) ---\n`);
@@ -70,7 +70,7 @@ export function formatLlmJsonFailureForUi(err: LlmJsonParseError, maxTotal = 24_
     parts.push(`${raw.slice(0, 6000)}\n... [middle omitted] ...\n${raw.slice(-4000)}`);
   }
 
-  let out = parts.join("");
+  let out = parts.join('');
   if (out.length > maxTotal) {
     out = `${out.slice(0, maxTotal)}\n...[capped at ${maxTotal} chars]`;
   }
@@ -79,13 +79,13 @@ export function formatLlmJsonFailureForUi(err: LlmJsonParseError, maxTotal = 24_
 
 function logLlmJsonFailure(context: string, rawResponse: string, extracted: string, err: unknown): void {
   const msg = err instanceof Error ? err.message : String(err);
-  process.stderr.write("\n[llm] ========== JSON PARSE / EXTRACT FAILURE ==========\n");
+  process.stderr.write('\n[llm] ========== JSON PARSE / EXTRACT FAILURE ==========\n');
   process.stderr.write(`[llm] ${context} — ${msg}\n`);
   process.stderr.write(`[llm] raw model text (${rawResponse.length} chars):\n`);
   process.stderr.write(`${truncateForLog(rawResponse)}\n`);
   process.stderr.write(`[llm] extracted for JSON.parse (${extracted.length} chars):\n`);
   process.stderr.write(`${truncateForLog(extracted)}\n`);
-  process.stderr.write("[llm] ========== END LLM JSON FAILURE ==========\n\n");
+  process.stderr.write('[llm] ========== END LLM JSON FAILURE ==========\n\n');
 }
 
 let _client: GoogleGenerativeAI | null = null;
@@ -93,7 +93,7 @@ let _client: GoogleGenerativeAI | null = null;
 function getClient(): GoogleGenerativeAI {
   if (!_client) {
     if (!env.geminiApiKey) {
-      throw new Error("GEMINI_API_KEY is not set");
+      throw new Error('GEMINI_API_KEY is not set');
     }
     _client = new GoogleGenerativeAI(env.geminiApiKey);
   }
@@ -182,20 +182,16 @@ async function callWithRetry(
 
 /** Map Unicode typographic quotes to ASCII so JSON.parse / brace balancing work. */
 function normalizeTypographicQuotesToAscii(text: string): string {
-  return text
-    .replaceAll("\u201c", '"')
-    .replaceAll("\u201d", '"')
-    .replaceAll("\u2018", "'")
-    .replaceAll("\u2019", "'");
+  return text.replaceAll('\u201c', '"').replaceAll('\u201d', '"').replaceAll('\u2018', "'").replaceAll('\u2019', "'");
 }
 
 /** Strip markdown fences; handle truncated output (no closing ```). */
 function stripMarkdownFence(raw: string): string {
   let s = raw.trim();
-  if (!s.startsWith("```")) return s;
+  if (!s.startsWith('```')) return s;
 
-  s = s.replace(/^```(?:json)?\s*/i, "");
-  const close = s.lastIndexOf("```");
+  s = s.replace(/^```(?:json)?\s*/i, '');
+  const close = s.lastIndexOf('```');
   if (close >= 0) {
     s = s.slice(0, close).trim();
   }
@@ -207,8 +203,8 @@ function stripMarkdownFence(raw: string): string {
  * Respects strings and escapes so braces inside values are ignored.
  */
 function extractBalancedJsonFragment(text: string): string | null {
-  const startObj = text.indexOf("{");
-  const startArr = text.indexOf("[");
+  const startObj = text.indexOf('{');
+  const startArr = text.indexOf('[');
   let start = -1;
   if (startObj >= 0 && (startArr < 0 || startObj <= startArr)) {
     start = startObj;
@@ -229,7 +225,7 @@ function extractBalancedJsonFragment(text: string): string | null {
       escape = false;
       continue;
     }
-    if (c === "\\" && inString) {
+    if (c === '\\' && inString) {
       escape = true;
       continue;
     }
@@ -239,9 +235,9 @@ function extractBalancedJsonFragment(text: string): string | null {
     }
     if (inString) continue;
 
-    if (c === "{" || c === "[") {
+    if (c === '{' || c === '[') {
       depth++;
-    } else if (c === "}" || c === "]") {
+    } else if (c === '}' || c === ']') {
       depth--;
       if (depth === 0) {
         return text.slice(start, i + 1);
@@ -264,7 +260,7 @@ function extractJson(raw: string): string {
  * 값이 JSON 문자열(`"{ ... }"`)로 감싸진 경우를 정상 배열로 변환한다.
  */
 function normalizeIndexedObject(parsed: unknown): unknown {
-  if (Array.isArray(parsed) || typeof parsed !== "object" || parsed === null) {
+  if (Array.isArray(parsed) || typeof parsed !== 'object' || parsed === null) {
     return parsed;
   }
 
@@ -278,8 +274,12 @@ function normalizeIndexedObject(parsed: unknown): unknown {
   const sorted = keys.sort((a, b) => Number(a) - Number(b));
   return sorted.map((k) => {
     const v = obj[k];
-    if (typeof v === "string") {
-      try { return JSON.parse(v); } catch { return v; }
+    if (typeof v === 'string') {
+      try {
+        return JSON.parse(v);
+      } catch {
+        return v;
+      }
     }
     return v;
   });
@@ -291,9 +291,9 @@ function normalizeIndexedObject(parsed: unknown): unknown {
 function normalizeArrayStringElements(parsed: unknown): unknown {
   if (!Array.isArray(parsed)) return parsed;
   return parsed.map((item) => {
-    if (typeof item !== "string") return item;
+    if (typeof item !== 'string') return item;
     const t = item.trim();
-    if (!t.startsWith("{") && !t.startsWith("[")) return item;
+    if (!t.startsWith('{') && !t.startsWith('[')) return item;
     try {
       return normalizeIndexedObject(JSON.parse(item));
     } catch {
@@ -309,43 +309,35 @@ function normalizeArrayStringElements(parsed: unknown): unknown {
  * - 객체 → "key: value" 형태로 줄바꿈 join (모든 값이 원시일 때)
  * 재귀적으로 중첩 객체/배열에도 적용한다.
  */
-function coerceNonStringFieldsToString(
-  data: unknown,
-  coercePrimitiveStringArrays: boolean,
-): unknown {
+function coerceNonStringFieldsToString(data: unknown, coercePrimitiveStringArrays: boolean): unknown {
   if (data === null || data === undefined) return data;
 
   if (Array.isArray(data)) {
     return data.map((item) => coerceNonStringFieldsToString(item, coercePrimitiveStringArrays));
   }
 
-  if (typeof data === "object") {
+  if (typeof data === 'object') {
     const obj = data as Record<string, unknown>;
     const result: Record<string, unknown> = {};
     for (const [key, value] of Object.entries(obj)) {
       if (Array.isArray(value)) {
-        const hasObject = value.some(
-          (v) => typeof v === "object" && v !== null && !Array.isArray(v),
-        );
+        const hasObject = value.some((v) => typeof v === 'object' && v !== null && !Array.isArray(v));
         if (hasObject) {
-          result[key] = value.map((item) =>
-            coerceNonStringFieldsToString(item, coercePrimitiveStringArrays),
-          );
+          result[key] = value.map((item) => coerceNonStringFieldsToString(item, coercePrimitiveStringArrays));
         } else if (coercePrimitiveStringArrays) {
-          result[key] =
-            value.length === 0 ? [] : value.map((v) => String(v)).join("\n");
+          result[key] = value.length === 0 ? [] : value.map((v) => String(v)).join('\n');
         } else {
           result[key] = value;
         }
-      } else if (typeof value === "object" && value !== null) {
+      } else if (typeof value === 'object' && value !== null) {
         const inner = value as Record<string, unknown>;
         const allPrimitiveValues = Object.values(inner).every(
-          (v) => typeof v === "string" || typeof v === "number" || typeof v === "boolean",
+          (v) => typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean',
         );
         if (allPrimitiveValues) {
           result[key] = Object.entries(inner)
             .map(([k, v]) => `${k}: ${String(v)}`)
-            .join("\n");
+            .join('\n');
         } else {
           result[key] = coerceNonStringFieldsToString(value, coercePrimitiveStringArrays);
         }
@@ -359,10 +351,7 @@ function coerceNonStringFieldsToString(
   return data;
 }
 
-function normalizeLlmParsedJson(
-  parsed: unknown,
-  coercePrimitiveStringArrays: boolean,
-): unknown {
+function normalizeLlmParsedJson(parsed: unknown, coercePrimitiveStringArrays: boolean): unknown {
   const indexed = normalizeIndexedObject(parsed);
   const stringElements = normalizeArrayStringElements(indexed);
   return coerceNonStringFieldsToString(stringElements, coercePrimitiveStringArrays);
@@ -375,7 +364,7 @@ export interface GenerateJsonOptions {
 }
 
 /** How we recovered when strict `JSON.parse` failed (logged for debugging). */
-type LlmJsonParseFallback = "json5" | "jsonrepair";
+type LlmJsonParseFallback = 'json5' | 'jsonrepair';
 
 /**
  * Strict parse first; on failure try JSON5 (trailing commas, comments, etc.),
@@ -387,10 +376,10 @@ function parseLlmExtractedJson(jsonStr: string): { value: unknown; fallback?: Ll
     return { value: JSON.parse(jsonStr) };
   } catch {
     try {
-      return { value: JSON5.parse(jsonStr), fallback: "json5" };
+      return { value: JSON5.parse(jsonStr), fallback: 'json5' };
     } catch {
       const repaired = jsonrepair(jsonStr);
-      return { value: JSON.parse(repaired), fallback: "jsonrepair" };
+      return { value: JSON.parse(repaired), fallback: 'jsonrepair' };
     }
   }
 }
@@ -428,7 +417,7 @@ export async function generateJson<T>(
     }
     firstParsed = normalizeLlmParsedJson(value, coercePrimitiveStringArrays);
   } catch (parseErr) {
-    logLlmJsonFailure("generateJson JSON.parse (primary)", text, jsonStr, parseErr);
+    logLlmJsonFailure('generateJson JSON.parse (primary)', text, jsonStr, parseErr);
     throw new LlmJsonParseError(
       parseErr instanceof Error ? parseErr.message : String(parseErr),
       text,
@@ -443,23 +432,23 @@ export async function generateJson<T>(
   }
 
   const repairPrompt = [
-    "The previous response had validation errors. Fix the JSON to match the schema.",
-    "",
-    "IMPORTANT RULES:",
+    'The previous response had validation errors. Fix the JSON to match the schema.',
+    '',
+    'IMPORTANT RULES:',
     '- All fields typed as "string" MUST be plain strings, NOT arrays or objects.',
     '  - WRONG: "ts": ["step1", "step2"]  →  RIGHT: "ts": "step1\\nstep2"',
     '  - WRONG: "td": {"key": "val"}     →  RIGHT: "td": "key: val"',
-    "- Each array element must be a JSON object, NOT a stringified JSON string.",
+    '- Each array element must be a JSON object, NOT a stringified JSON string.',
     '  - WRONG: ["{\\"ti\\":\\"TC-0001\\"}"]  →  RIGHT: [{"ti":"TC-0001"}]',
-    "",
-    "Validation errors:",
+    '',
+    'Validation errors:',
     JSON.stringify(firstParse.error.flatten(), null, 2),
-    "",
-    "Original response:",
+    '',
+    'Original response:',
     jsonStr,
-    "",
-    "Return ONLY valid JSON, no markdown fences or explanations.",
-  ].join("\n");
+    '',
+    'Return ONLY valid JSON, no markdown fences or explanations.',
+  ].join('\n');
 
   const repair = await callWithRetry(repairPrompt, config, SELF_REPAIR_RETRIES);
   const repairJson = extractJson(repair.text);
@@ -472,7 +461,7 @@ export async function generateJson<T>(
     }
     secondParsed = normalizeLlmParsedJson(value, coercePrimitiveStringArrays);
   } catch (parseErr) {
-    logLlmJsonFailure("generateJson JSON.parse (repair)", repair.text, repairJson, parseErr);
+    logLlmJsonFailure('generateJson JSON.parse (repair)', repair.text, repairJson, parseErr);
     throw new LlmJsonParseError(
       parseErr instanceof Error ? parseErr.message : String(parseErr),
       repair.text,
@@ -495,16 +484,12 @@ export async function generateJson<T>(
   }
 
   logLlmJsonFailure(
-    "generateJson Zod failed after repair (see flatten below)",
+    'generateJson Zod failed after repair (see flatten below)',
     repair.text,
     repairJson,
     secondParse.error,
   );
-  console.error(
-    `[llm] zod flatten (repair):\n${JSON.stringify(secondParse.error.flatten(), null, 2)}`,
-  );
+  console.error(`[llm] zod flatten (repair):\n${JSON.stringify(secondParse.error.flatten(), null, 2)}`);
 
-  throw new Error(
-    `LLM JSON self-repair failed: ${JSON.stringify(secondParse.error.flatten())}`,
-  );
+  throw new Error(`LLM JSON self-repair failed: ${JSON.stringify(secondParse.error.flatten())}`);
 }

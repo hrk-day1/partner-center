@@ -1,5 +1,5 @@
-import type { EvaluationIssue, TaxonomyEvaluationResult } from "../types/pipeline.js";
-import type { ResolvedSkill } from "../skills/resolved-skill.js";
+import type { EvaluationIssue, TaxonomyEvaluationResult } from '../types/pipeline.js';
+import type { ResolvedSkill } from '../skills/resolved-skill.js';
 
 const MIN_DOMAINS = 3;
 const MAX_DOMAINS = 12;
@@ -25,41 +25,33 @@ export function evaluateTaxonomy(resolved: ResolvedSkill): TaxonomyEvaluationRes
   };
 }
 
-function validateDomainCount(
-  resolved: ResolvedSkill,
-  issues: EvaluationIssue[],
-  suggestions: string[],
-): void {
+function validateDomainCount(resolved: ResolvedSkill, issues: EvaluationIssue[], suggestions: string[]): void {
   const count = resolved.domainOrder.length;
   if (count < MIN_DOMAINS) {
     issues.push({
-      type: "taxonomy_domain_count",
+      type: 'taxonomy_domain_count',
       message: `도메인이 ${count}개로 최소 ${MIN_DOMAINS}개 미달`,
       details: { current: count, min: MIN_DOMAINS },
     });
-    suggestions.push("기능 목록을 더 세분화하여 도메인을 추가하세요.");
+    suggestions.push('기능 목록을 더 세분화하여 도메인을 추가하세요.');
   }
   if (count > MAX_DOMAINS) {
     issues.push({
-      type: "taxonomy_domain_count",
+      type: 'taxonomy_domain_count',
       message: `도메인이 ${count}개로 최대 ${MAX_DOMAINS}개 초과`,
       details: { current: count, max: MAX_DOMAINS },
     });
-    suggestions.push("유사한 도메인을 병합하여 개수를 줄이세요.");
+    suggestions.push('유사한 도메인을 병합하여 개수를 줄이세요.');
   }
 }
 
-function validateKeywordQuality(
-  resolved: ResolvedSkill,
-  issues: EvaluationIssue[],
-  suggestions: string[],
-): void {
+function validateKeywordQuality(resolved: ResolvedSkill, issues: EvaluationIssue[], suggestions: string[]): void {
   for (const domain of resolved.domainOrder) {
     const keywords = resolved.domainKeywords[domain] ?? [];
 
     if (keywords.length < MIN_KEYWORDS_PER_DOMAIN) {
       issues.push({
-        type: "taxonomy_keyword_quality",
+        type: 'taxonomy_keyword_quality',
         message: `${domain}: 키워드가 ${keywords.length}개로 최소 ${MIN_KEYWORDS_PER_DOMAIN}개 미달`,
         details: { domain, current: keywords.length, min: MIN_KEYWORDS_PER_DOMAIN },
       });
@@ -68,7 +60,7 @@ function validateKeywordQuality(
     const empties = keywords.filter((k) => k.trim().length === 0);
     if (empties.length > 0) {
       issues.push({
-        type: "taxonomy_keyword_quality",
+        type: 'taxonomy_keyword_quality',
         message: `${domain}: 빈 키워드 ${empties.length}개 발견`,
         details: { domain, emptyCount: empties.length },
       });
@@ -79,7 +71,7 @@ function validateKeywordQuality(
     if (unique.size < lower.length) {
       const dupeCount = lower.length - unique.size;
       issues.push({
-        type: "taxonomy_keyword_quality",
+        type: 'taxonomy_keyword_quality',
         message: `${domain}: 도메인 내 중복 키워드 ${dupeCount}개 발견`,
         details: { domain, duplicateCount: dupeCount },
       });
@@ -88,11 +80,7 @@ function validateKeywordQuality(
   }
 }
 
-function validateKeywordOverlap(
-  resolved: ResolvedSkill,
-  issues: EvaluationIssue[],
-  suggestions: string[],
-): void {
+function validateKeywordOverlap(resolved: ResolvedSkill, issues: EvaluationIssue[], suggestions: string[]): void {
   const domains = [...resolved.domainOrder];
   const keywordMap = new Map<string, string[]>();
 
@@ -115,11 +103,11 @@ function validateKeywordOverlap(
 
   if (overlaps.length > 0) {
     issues.push({
-      type: "taxonomy_keyword_overlap",
+      type: 'taxonomy_keyword_overlap',
       message: `${overlaps.length}개 키워드가 여러 도메인에 중복 등록됨`,
       details: { overlaps: overlaps.slice(0, 10) },
     });
-    suggestions.push("도메인 간 중복 키워드를 정리하면 분류 정확도가 향상됩니다.");
+    suggestions.push('도메인 간 중복 키워드를 정리하면 분류 정확도가 향상됩니다.');
   }
 }
 
@@ -133,7 +121,7 @@ function validateTemplateCompleteness(
 
     if (templates.length === 0) {
       issues.push({
-        type: "taxonomy_template_completeness",
+        type: 'taxonomy_template_completeness',
         message: `${domain}: 템플릿이 없음 (최소 1개 필요)`,
         details: { domain },
       });
@@ -143,12 +131,12 @@ function validateTemplateCompleteness(
     for (let i = 0; i < templates.length; i++) {
       const t = templates[i]!;
       const missing: string[] = [];
-      if (!t.steps?.trim()) missing.push("steps");
-      if (!t.expectedResult?.trim()) missing.push("expectedResult");
+      if (!t.steps?.trim()) missing.push('steps');
+      if (!t.expectedResult?.trim()) missing.push('expectedResult');
       if (missing.length > 0) {
         issues.push({
-          type: "taxonomy_template_completeness",
-          message: `${domain} 템플릿[${i}]: ${missing.join(", ")} 필드가 비어있음`,
+          type: 'taxonomy_template_completeness',
+          message: `${domain} 템플릿[${i}]: ${missing.join(', ')} 필드가 비어있음`,
           details: { domain, templateIndex: i, missingFields: missing },
         });
       }
@@ -156,11 +144,7 @@ function validateTemplateCompleteness(
   }
 }
 
-function validateMinSets(
-  resolved: ResolvedSkill,
-  issues: EvaluationIssue[],
-  suggestions: string[],
-): void {
+function validateMinSets(resolved: ResolvedSkill, issues: EvaluationIssue[], suggestions: string[]): void {
   for (const domain of resolved.domainOrder) {
     const minSet = resolved.domainMinSets[domain];
     if (!minSet) continue;
@@ -168,7 +152,7 @@ function validateMinSets(
     const total = Object.values(minSet).reduce((sum, v) => sum + v, 0);
     if (total > MAX_MINSETS_TOTAL_PER_DOMAIN) {
       issues.push({
-        type: "taxonomy_minsets",
+        type: 'taxonomy_minsets',
         message: `${domain}: minSets 합계 ${total}이 상한 ${MAX_MINSETS_TOTAL_PER_DOMAIN} 초과`,
         details: { domain, total, max: MAX_MINSETS_TOTAL_PER_DOMAIN },
       });
@@ -177,7 +161,7 @@ function validateMinSets(
 
     if (minSet.Functional === 0) {
       issues.push({
-        type: "taxonomy_minsets",
+        type: 'taxonomy_minsets',
         message: `${domain}: Functional TC 최소 개수가 0 (정상 기능 검증 누락 우려)`,
         details: { domain },
       });
@@ -185,22 +169,14 @@ function validateMinSets(
   }
 }
 
-function validateBalance(
-  resolved: ResolvedSkill,
-  issues: EvaluationIssue[],
-  suggestions: string[],
-): void {
+function validateBalance(resolved: ResolvedSkill, issues: EvaluationIssue[], suggestions: string[]): void {
   if (resolved.domainOrder.length < 2) return;
 
-  const kwCounts = resolved.domainOrder.map(
-    (d) => (resolved.domainKeywords[d] ?? []).length,
-  );
-  const tplCounts = resolved.domainOrder.map(
-    (d) => (resolved.templates[d] ?? []).length,
-  );
+  const kwCounts = resolved.domainOrder.map((d) => (resolved.domainKeywords[d] ?? []).length);
+  const tplCounts = resolved.domainOrder.map((d) => (resolved.templates[d] ?? []).length);
 
-  checkSkew("키워드", kwCounts, resolved.domainOrder, issues, suggestions);
-  checkSkew("템플릿", tplCounts, resolved.domainOrder, issues, suggestions);
+  checkSkew('키워드', kwCounts, resolved.domainOrder, issues, suggestions);
+  checkSkew('템플릿', tplCounts, resolved.domainOrder, issues, suggestions);
 }
 
 function checkSkew(
@@ -219,7 +195,7 @@ function checkSkew(
     const maxDomain = domainOrder[counts.indexOf(max)]!;
     const minDomain = domainOrder[counts.indexOf(min)]!;
     issues.push({
-      type: "taxonomy_balance",
+      type: 'taxonomy_balance',
       message: `${label} 편중: ${maxDomain}(${max}개) vs ${minDomain}(${min}개), 비율 ${(max / min).toFixed(1)}x`,
       details: { label, maxDomain, maxCount: max, minDomain, minCount: min },
     });

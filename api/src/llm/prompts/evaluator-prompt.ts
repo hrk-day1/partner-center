@@ -1,9 +1,9 @@
-import type { ChecklistItem, TestCase } from "../../types/tc.js";
-import type { EvaluationIssue } from "../../types/pipeline.js";
-import type { ResolvedSkill } from "../../skills/resolved-skill.js";
-import { TC_TYPES } from "../../types/tc.js";
-import { deriveTestPoints } from "../../pipeline/test-points.js";
-import { TC_KEY_MAP, keyMappingTable, compactFieldList } from "../key-mapping.js";
+import type { ChecklistItem, TestCase } from '../../types/tc.js';
+import type { EvaluationIssue } from '../../types/pipeline.js';
+import type { ResolvedSkill } from '../../skills/resolved-skill.js';
+import { TC_TYPES } from '../../types/tc.js';
+import { deriveTestPoints } from '../../pipeline/test-points.js';
+import { TC_KEY_MAP, keyMappingTable, compactFieldList } from '../key-mapping.js';
 
 export function buildRepairPrompt(
   issues: EvaluationIssue[],
@@ -16,9 +16,9 @@ export function buildRepairPrompt(
   const issuesSummary = issues
     .slice(0, 30)
     .map((i) => `  - [${i.type}] ${i.message}`)
-    .join("\n");
+    .join('\n');
 
-  const missingPointIssues = issues.filter((i) => i.type === "test_point_missing");
+  const missingPointIssues = issues.filter((i) => i.type === 'test_point_missing');
 
   const uncoveredWithPoints = uncoveredItems.slice(0, 20).map((c) => {
     const points = deriveTestPoints(c, true);
@@ -28,7 +28,7 @@ export function buildRepairPrompt(
       domain: c.domain,
       description: c.description,
       featureTypes: c.featureTypes ?? [],
-      precondition: c.precondition ?? "",
+      precondition: c.precondition ?? '',
       sourceRow: c.sourceRow,
       sourceSheet: c.sourceSheet,
       missingTestPoints: points.map((p) => ({
@@ -47,9 +47,13 @@ export function buildRepairPrompt(
     Severity: tc.Severity,
   }));
 
-  const missingPointsSummary = missingPointIssues.length > 0
-    ? `\n## 누락된 필수 테스트 포인트 (${missingPointIssues.length}건)\n${missingPointIssues.slice(0, 20).map((i) => `  - ${i.message}`).join("\n")}`
-    : "";
+  const missingPointsSummary =
+    missingPointIssues.length > 0
+      ? `\n## 누락된 필수 테스트 포인트 (${missingPointIssues.length}건)\n${missingPointIssues
+          .slice(0, 20)
+          .map((i) => `  - ${i.message}`)
+          .join('\n')}`
+      : '';
 
   return `당신은 시니어 QA 엔지니어입니다. 아래 평가 결과를 바탕으로 빠진 테스트 관점을 보완하세요.
 
@@ -76,7 +80,7 @@ ${JSON.stringify(tcSample, null, 2)}
 1. 미커버 체크리스트 항목의 **누락된 테스트 포인트**를 각각 커버하는 새 TC를 생성하세요.
 2. 각 테스트 포인트의 intent를 반영하여 구체적인 Test_Steps와 Expected_Result를 작성하세요.
 3. 기능의 featureTypes와 precondition을 참고하여 실무에서 바로 실행 가능한 TC를 만드세요. **Precondition**은 짧은 전제 키워드만(한 줄·~80자 권장, 장문 서술 금지).
-4. TC_ID 형식: "TC-XXXX", TC-${String(nextTcId).padStart(4, "0")}부터 시작합니다.
+4. TC_ID 형식: "TC-XXXX", TC-${String(nextTcId).padStart(4, '0')}부터 시작합니다.
 5. Environment: "${config.environmentDefault}", Owner: "${config.ownerDefault}", Status: "Draft", Automation_Candidate: "N".
 6. Traceability: "R{sourceRow}".
 7. Notes(${TC_KEY_MAP.Notes})는 특이사항이 있을 때만 작성하고, 없으면 생략하세요.

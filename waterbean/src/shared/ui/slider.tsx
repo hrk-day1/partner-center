@@ -1,5 +1,5 @@
-import * as SliderPrimitive from "@radix-ui/react-slider";
-import { cn } from "@/shared/lib/utils";
+import * as SliderPrimitive from '@radix-ui/react-slider';
+import { cn } from '@/shared/lib/utils';
 
 interface SliderProps {
   id?: string;
@@ -12,20 +12,11 @@ interface SliderProps {
   className?: string;
 }
 
-export function Slider({
-  id,
-  label,
-  min,
-  max,
-  value,
-  onValueChange,
-  valueDescription,
-  className,
-}: SliderProps) {
+export function Slider({ id, label, min, max, value, onValueChange, valueDescription, className }: SliderProps) {
   const steps = Array.from({ length: max - min + 1 }, (_, i) => min + i);
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div className={cn('flex flex-col gap-1.5', className)}>
       {label && (
         <label htmlFor={id} className="text-sm font-medium text-zinc-700">
           {label}
@@ -33,7 +24,7 @@ export function Slider({
       )}
       <SliderPrimitive.Root
         id={id}
-        className="relative flex w-full touch-none select-none items-center py-1"
+        className="relative flex w-full touch-none items-center py-1 select-none"
         value={[value]}
         onValueChange={(v) => onValueChange(v[0] ?? min)}
         min={min}
@@ -42,13 +33,13 @@ export function Slider({
         aria-valuetext={valueDescription}
       >
         <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-zinc-200">
-          <SliderPrimitive.Range className="absolute h-full rounded-full bg-accent" />
+          <SliderPrimitive.Range className="bg-accent absolute h-full rounded-full" />
         </SliderPrimitive.Track>
         <SliderPrimitive.Thumb
           className={cn(
-            "block size-4 shrink-0 rounded-full border border-border bg-white shadow-sm",
-            "outline-none transition-colors focus-visible:border-accent focus-visible:ring-1 focus-visible:ring-accent",
-            "disabled:pointer-events-none disabled:opacity-50",
+            'border-border block size-4 shrink-0 rounded-full border bg-white shadow-sm',
+            'focus-visible:border-accent focus-visible:ring-accent transition-colors outline-none focus-visible:ring-1',
+            'disabled:pointer-events-none disabled:opacity-50',
           )}
         />
       </SliderPrimitive.Root>
@@ -57,8 +48,8 @@ export function Slider({
           <span
             key={step}
             className={cn(
-              "size-1.5 shrink-0 rounded-full transition-colors",
-              step === value ? "bg-accent" : "bg-zinc-300",
+              'size-1.5 shrink-0 rounded-full transition-colors',
+              step === value ? 'bg-accent' : 'bg-zinc-300',
             )}
           />
         ))}

@@ -1,5 +1,5 @@
-import type { EvaluationIssue } from "../../types/pipeline.js";
-import type { ResolvedSkill } from "../../skills/resolved-skill.js";
+import type { EvaluationIssue } from '../../types/pipeline.js';
+import type { ResolvedSkill } from '../../skills/resolved-skill.js';
 
 export function buildTaxonomyEvalPrompt(
   resolved: ResolvedSkill,
@@ -12,19 +12,19 @@ export function buildTaxonomyEvalPrompt(
       const kw = resolved.domainKeywords[d] ?? [];
       const tpl = resolved.templates[d] ?? [];
       const mins = resolved.domainMinSets[d] ?? {};
-      return `  - ${d}: 키워드 ${kw.length}개 [${kw.slice(0, 5).join(", ")}${kw.length > 5 ? "..." : ""}], 템플릿 ${tpl.length}개, minSets=${JSON.stringify(mins)}`;
+      return `  - ${d}: 키워드 ${kw.length}개 [${kw.slice(0, 5).join(', ')}${kw.length > 5 ? '...' : ''}], 템플릿 ${tpl.length}개, minSets=${JSON.stringify(mins)}`;
     })
-    .join("\n");
+    .join('\n');
 
   const rowsPreview = sampleRows
     .slice(0, 15)
     .map((row, i) => `  행 ${i + 1}: ${JSON.stringify(row)}`)
-    .join("\n");
+    .join('\n');
 
   const existingIssues =
     ruleIssues.length > 0
-      ? ruleIssues.map((i) => `  - [${i.type}] ${i.message}`).join("\n")
-      : "  (규칙 검증 이슈 없음)";
+      ? ruleIssues.map((i) => `  - [${i.type}] ${i.message}`).join('\n')
+      : '  (규칙 검증 이슈 없음)';
 
   return `당신은 시니어 QA 아키텍트입니다. Taxonomy(도메인 분류 체계) 결과를 원본 데이터와 비교하여 품질을 평가하세요.
 

@@ -1,5 +1,5 @@
-import type { SkillManifest } from "../../skills/types.js";
-import { TC_TYPES } from "../../types/tc.js";
+import type { SkillManifest } from '../../skills/types.js';
+import { TC_TYPES } from '../../types/tc.js';
 
 export function buildTaxonomyPrompt(
   headers: string[],
@@ -7,11 +7,10 @@ export function buildTaxonomyPrompt(
   sourceSheetName: string,
   baseSkill: SkillManifest,
 ): string {
-
   const rowsPreview = sampleRows
     .slice(0, 30)
     .map((row, i) => `  행 ${i + 1}: ${JSON.stringify(row)}`)
-    .join("\n");
+    .join('\n');
 
   return `당신은 시니어 QA 아키텍트입니다. 아래 스프레드시트 샘플을 분석하여 **이 제품/문서에 맞는 테스트 도메인 분류 체계(Taxonomy)**를 설계하세요.
 

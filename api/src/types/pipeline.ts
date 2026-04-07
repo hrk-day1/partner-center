@@ -1,12 +1,12 @@
-import type { ChecklistItem, Priority, TestCase, TcType } from "./tc.js";
+import type { ChecklistItem, Priority, TestCase, TcType } from './tc.js';
 
-export type Implementation = "deterministic" | "llm";
+export type Implementation = 'deterministic' | 'llm';
 
 /** 결정적 Generator의 도메인 최소 세트 보완 TC를 어느 체크리스트 행에 부착할지 */
-export type DomainMinSetFillMode = "round_robin" | "representative" | "off";
+export type DomainMinSetFillMode = 'round_robin' | 'representative' | 'off';
 
 /** D-Evaluator: 스펙 근거·Traceability 검증 게이트 (기본 warn = passed에 영향 없음, block 시 차단) */
-export type EvaluatorGateMode = "off" | "warn" | "block";
+export type EvaluatorGateMode = 'off' | 'warn' | 'block';
 
 export interface EvaluateOptions {
   evalSpecGrounding: EvaluatorGateMode;
@@ -46,21 +46,21 @@ export interface GeneratorResult {
 }
 
 export type EvaluationIssueType =
-  | "schema"
-  | "required_field"
-  | "domain_min"
-  | "coverage"
-  | "test_point_missing"
-  | "duplicate"
-  | "taxonomy_domain_count"
-  | "taxonomy_keyword_quality"
-  | "taxonomy_keyword_overlap"
-  | "taxonomy_template_completeness"
-  | "taxonomy_minsets"
-  | "taxonomy_balance"
-  | "taxonomy_llm"
-  | "spec_ungrounded"
-  | "traceability_mismatch";
+  | 'schema'
+  | 'required_field'
+  | 'domain_min'
+  | 'coverage'
+  | 'test_point_missing'
+  | 'duplicate'
+  | 'taxonomy_domain_count'
+  | 'taxonomy_keyword_quality'
+  | 'taxonomy_keyword_overlap'
+  | 'taxonomy_template_completeness'
+  | 'taxonomy_minsets'
+  | 'taxonomy_balance'
+  | 'taxonomy_llm'
+  | 'spec_ungrounded'
+  | 'traceability_mismatch';
 
 export interface EvaluationIssue {
   type: EvaluationIssueType;

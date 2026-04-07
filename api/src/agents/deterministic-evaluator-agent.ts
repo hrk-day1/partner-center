@@ -1,11 +1,11 @@
-import crypto from "node:crypto";
-import type { ChecklistItem, TestCase } from "../types/tc.js";
-import type { EvaluateOptions, EvaluationResult } from "../types/pipeline.js";
-import type { ResolvedSkill } from "../skills/resolved-skill.js";
-import { evaluate } from "../pipeline/evaluator.js";
-import type { Agent } from "./registry.js";
-import type { AgentResult, SubAgentConfig } from "./types.js";
-import type { eventBus } from "./event-bus.js";
+import crypto from 'node:crypto';
+import type { ChecklistItem, TestCase } from '../types/tc.js';
+import type { EvaluateOptions, EvaluationResult } from '../types/pipeline.js';
+import type { ResolvedSkill } from '../skills/resolved-skill.js';
+import { evaluate } from '../pipeline/evaluator.js';
+import type { Agent } from './registry.js';
+import type { AgentResult, SubAgentConfig } from './types.js';
+import type { eventBus } from './event-bus.js';
 
 export interface EvaluatorInput {
   checklist: ChecklistItem[];
@@ -17,7 +17,7 @@ export interface EvaluatorInput {
 }
 
 export class DeterministicEvaluatorAgent implements Agent<EvaluatorInput, EvaluationResult> {
-  readonly type = "evaluator" as const;
+  readonly type = 'evaluator' as const;
 
   async run(
     input: EvaluatorInput,
@@ -28,37 +28,50 @@ export class DeterministicEvaluatorAgent implements Agent<EvaluatorInput, Evalua
     const start = Date.now();
 
     bus.emit(config.pipelineId, {
-      agentId, agentType: "evaluator", status: "running", progress: 0,
-      message: "규칙 기반 검증 중...", timestamp: new Date().toISOString(),
+      agentId,
+      agentType: 'evaluator',
+      status: 'running',
+      progress: 0,
+      message: '규칙 기반 검증 중...',
+      timestamp: new Date().toISOString(),
     });
 
     try {
-      const result = evaluate(
-        input.checklist,
-        input.testCases,
-        input.resolvedSkill,
-        input.evaluateOptions,
-      );
+      const result = evaluate(input.checklist, input.testCases, input.resolvedSkill, input.evaluateOptions);
 
       bus.emit(config.pipelineId, {
-        agentId, agentType: "evaluator", status: "completed", progress: 100,
-        message: `검증 완료: ${result.passed ? "통과" : `이슈 ${result.issues.length}건`}`,
+        agentId,
+        agentType: 'evaluator',
+        status: 'completed',
+        progress: 100,
+        message: `검증 완료: ${result.passed ? '통과' : `이슈 ${result.issues.length}건`}`,
         timestamp: new Date().toISOString(),
       });
 
       return {
-        agentId, agentType: "evaluator", status: "completed",
-        data: result, durationMs: Date.now() - start,
+        agentId,
+        agentType: 'evaluator',
+        status: 'completed',
+        data: result,
+        durationMs: Date.now() - start,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = err instanceof Error ? err.message : 'Unknown error';
       bus.emit(config.pipelineId, {
-        agentId, agentType: "evaluator", status: "failed", progress: 0,
-        message, timestamp: new Date().toISOString(),
+        agentId,
+        agentType: 'evaluator',
+        status: 'failed',
+        progress: 0,
+        message,
+        timestamp: new Date().toISOString(),
       });
       return {
-        agentId, agentType: "evaluator", status: "failed",
-        data: null, error: message, durationMs: Date.now() - start,
+        agentId,
+        agentType: 'evaluator',
+        status: 'failed',
+        data: null,
+        error: message,
+        durationMs: Date.now() - start,
       };
     }
   }

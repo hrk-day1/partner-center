@@ -1,7 +1,7 @@
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
-import { ShellLayout } from "@/app/layouts/shell-layout";
-import { PipelinePage } from "@/features/pipeline/view/pipeline-page";
-import { SettingsPage } from "@/features/settings/view/settings-page";
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { ShellLayout } from '@/app/layouts/shell-layout';
+import { PipelinePage } from '@/features/pipeline/view/pipeline-page';
+import { SettingsPage } from '@/features/settings/view/settings-page';
 
 export function App() {
   return (

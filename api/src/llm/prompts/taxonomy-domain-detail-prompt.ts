@@ -1,5 +1,5 @@
-import type { SkillManifest } from "../../skills/types.js";
-import { TC_TYPES } from "../../types/tc.js";
+import type { SkillManifest } from '../../skills/types.js';
+import { TC_TYPES } from '../../types/tc.js';
 
 const KEYWORD_REFILL_SCHEMA_HINT = `{ "keywords": ["새키워드1", "새키워드2", ...] }`;
 
@@ -12,12 +12,12 @@ export function buildKeywordRefillPrompt(
   summary?: string,
 ): string {
   const deficit = minRequired - currentKeywords.length;
-  const summaryLine = summary ? `\n이 도메인 설명: ${summary}` : "";
+  const summaryLine = summary ? `\n이 도메인 설명: ${summary}` : '';
 
   return `당신은 시니어 QA 아키텍트입니다. 도메인 "${domainId}"의 키워드가 ${currentKeywords.length}개로 최소 ${minRequired}개에 미달합니다. **최소 ${deficit}개 이상**의 새로운 키워드를 추가해 주세요.
 
 ## 전체 도메인 순서
-${domainOrder.join(" → ")}
+${domainOrder.join(' → ')}
 
 ## 지금 보정할 도메인
 **${domainId}**${summaryLine}
@@ -51,13 +51,11 @@ export function buildTaxonomyDomainDetailPrompt(
   const rowsPreview = sampleRows
     .slice(0, 30)
     .map((row, i) => `  행 ${i + 1}: ${JSON.stringify(row)}`)
-    .join("\n");
+    .join('\n');
 
-  const orderLine = domainOrder.join(" → ");
+  const orderLine = domainOrder.join(' → ');
   const summaryBlock =
-    summary && summary.trim().length > 0
-      ? `\n## 이번 도메인 뼈대 설명 (1단계에서 확정)\n${summary.trim()}\n`
-      : "";
+    summary && summary.trim().length > 0 ? `\n## 이번 도메인 뼈대 설명 (1단계에서 확정)\n${summary.trim()}\n` : '';
 
   return `당신은 시니어 QA 아키텍트입니다. 아래 시트 샘플과 전체 도메인 순서를 참고하여 **단 하나의 도메인**에 대해서만 keywords, minSets(선택), templates를 채우세요.
 

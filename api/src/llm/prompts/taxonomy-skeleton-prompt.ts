@@ -1,6 +1,6 @@
-import type { SkillManifest } from "../../skills/types.js";
-import type { ResolvedSkill } from "../../skills/resolved-skill.js";
-import { TC_TYPES } from "../../types/tc.js";
+import type { SkillManifest } from '../../skills/types.js';
+import type { ResolvedSkill } from '../../skills/resolved-skill.js';
+import { TC_TYPES } from '../../types/tc.js';
 
 export function buildHybridTaxonomyPrompt(
   presetResolved: ResolvedSkill,
@@ -11,14 +11,14 @@ export function buildHybridTaxonomyPrompt(
   const existingDomains = presetResolved.domainOrder
     .map((d) => {
       const kw = presetResolved.domainKeywords[d] ?? [];
-      return `  - ${d}: [${kw.slice(0, 8).join(", ")}${kw.length > 8 ? "..." : ""}]`;
+      return `  - ${d}: [${kw.slice(0, 8).join(', ')}${kw.length > 8 ? '...' : ''}]`;
     })
-    .join("\n");
+    .join('\n');
 
   const rowsPreview = unclassifiedRows
     .slice(0, 30)
     .map((row, i) => `  행 ${i + 1}: ${JSON.stringify(row)}`)
-    .join("\n");
+    .join('\n');
 
   return `당신은 시니어 QA 아키텍트입니다. 기존 도메인 분류 체계가 있지만 아래 행들은 어떤 도메인에도 매칭되지 않았습니다. 이 미분류 행들을 처리하세요.
 
@@ -76,7 +76,7 @@ export function buildTaxonomySkeletonPrompt(
   const rowsPreview = sampleRows
     .slice(0, 30)
     .map((row, i) => `  행 ${i + 1}: ${JSON.stringify(row)}`)
-    .join("\n");
+    .join('\n');
 
   return `당신은 시니어 QA 아키텍트입니다. 아래 스프레드시트 샘플만 보고 **테스트 도메인 분류의 뼈대(식별자와 짧은 범위 설명)**만 설계하세요. 키워드·템플릿·minSets는 이 단계에서 출력하지 마세요 (다음 단계에서 도메인별로 채웁니다).
 

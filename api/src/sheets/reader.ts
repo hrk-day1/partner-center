@@ -1,4 +1,4 @@
-import { getSheetsClient } from "../config/sheets.js";
+import { getSheetsClient } from '../config/sheets.js';
 
 export function parseSpreadsheetUrl(url: string) {
   const idMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
@@ -23,28 +23,21 @@ export async function findSheetName(
   const allSheets = await getSheetMetadata(spreadsheetId);
 
   if (opts.sheetName) {
-    const found = allSheets.find(
-      (s) => s.properties?.title === opts.sheetName,
-    );
+    const found = allSheets.find((s) => s.properties?.title === opts.sheetName);
     if (found) return found.properties!.title!;
   }
 
   if (opts.gid) {
     const gidNum = Number(opts.gid);
-    const found = allSheets.find(
-      (s) => s.properties?.sheetId === gidNum,
-    );
+    const found = allSheets.find((s) => s.properties?.sheetId === gidNum);
     if (found) return found.properties!.title!;
   }
 
   if (allSheets.length > 0) return allSheets[0].properties!.title!;
-  throw new Error("No sheets found in spreadsheet");
+  throw new Error('No sheets found in spreadsheet');
 }
 
-export async function readSheetValues(
-  spreadsheetId: string,
-  range: string,
-): Promise<string[][]> {
+export async function readSheetValues(spreadsheetId: string, range: string): Promise<string[][]> {
   const sheets = await getSheetsClient();
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId,

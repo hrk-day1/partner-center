@@ -1,13 +1,9 @@
-import crypto from "node:crypto";
-import { z } from "zod";
-import type { ChecklistItem } from "../types/tc.js";
-import { generateJson, type LlmUsage } from "../llm/gemini-client.js";
-import {
-  buildPlanPromptChunkBody,
-  buildPlanPromptPrefix,
-  buildPlanPromptSuffix,
-} from "../llm/prompts/plan-prompt.js";
-import { expandKeys, PLAN_KEY_MAP } from "../llm/key-mapping.js";
+import crypto from 'node:crypto';
+import { z } from 'zod';
+import type { ChecklistItem } from '../types/tc.js';
+import { generateJson, type LlmUsage } from '../llm/gemini-client.js';
+import { buildPlanPromptChunkBody, buildPlanPromptPrefix, buildPlanPromptSuffix } from '../llm/prompts/plan-prompt.js';
+import { expandKeys, PLAN_KEY_MAP } from '../llm/key-mapping.js';
 import {
   detectHeaderAndData,
   buildChecklist,
@@ -15,16 +11,16 @@ import {
   isValidFeatureType,
   projectRowToTcSourceFields,
   resolveSourceSheetColumns,
-} from "../pipeline/plan.js";
-import { enrichChecklistWithSpecRisk } from "../pipeline/spec-risk.js";
-import { env } from "../config/env.js";
-import type { Agent } from "./registry.js";
-import type { AgentResult, SubAgentConfig } from "./types.js";
-import type { eventBus } from "./event-bus.js";
-import type { PlanInput } from "./deterministic-plan-agent.js";
+} from '../pipeline/plan.js';
+import { enrichChecklistWithSpecRisk } from '../pipeline/spec-risk.js';
+import { env } from '../config/env.js';
+import type { Agent } from './registry.js';
+import type { AgentResult, SubAgentConfig } from './types.js';
+import type { eventBus } from './event-bus.js';
+import type { PlanInput } from './deterministic-plan-agent.js';
 
 function normalizeCompactChecklistItem(raw: unknown): unknown {
-  if (!raw || typeof raw !== "object") return raw;
+  if (!raw || typeof raw !== 'object') return raw;
   const o = { ...(raw as Record<string, unknown>) };
   const m = PLAN_KEY_MAP;
 
@@ -33,11 +29,11 @@ function normalizeCompactChecklistItem(raw: unknown): unknown {
     o[m.description] = ds
       .map((x) => String(x).trim())
       .filter((s) => s.length > 0)
-      .join("\n");
+      .join('\n');
   }
 
   const ft = o[m.featureTypes];
-  if (typeof ft === "string") {
+  if (typeof ft === 'string') {
     o[m.featureTypes] = [ft];
   } else if (ft != null && !Array.isArray(ft)) {
     o[m.featureTypes] = [String(ft)];
@@ -48,12 +44,9 @@ function normalizeCompactChecklistItem(raw: unknown): unknown {
 
 function compactChecklistSchema(allowed: readonly string[]) {
   if (allowed.length === 0) {
-    throw new Error("resolvedSkill.domainOrder must not be empty");
+    throw new Error('resolvedSkill.domainOrder must not be empty');
   }
-  const domainZod =
-    allowed.length === 1
-      ? z.literal(allowed[0])
-      : z.enum(allowed as [string, ...string[]]);
+  const domainZod = allowed.length === 1 ? z.literal(allowed[0]) : z.enum(allowed as [string, ...string[]]);
   const m = PLAN_KEY_MAP;
   const itemSchema = z.object({
     [m.id]: z.string(),
@@ -92,9 +85,7 @@ interface RawChecklistItem {
 function validateAndFillFeatureTypes(raw: RawChecklistItem[]): ChecklistItem[] {
   return raw.map((item) => {
     const validated = (item.featureTypes ?? []).filter(isValidFeatureType);
-    const featureTypes = validated.length > 0
-      ? validated
-      : inferFeatureTypes(`${item.feature} ${item.description}`);
+    const featureTypes = validated.length > 0 ? validated : inferFeatureTypes(`${item.feature} ${item.description}`);
     return { ...item, featureTypes };
   });
 }
@@ -110,7 +101,7 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 function reassignIds(items: RawChecklistItem[]): RawChecklistItem[] {
   return items.map((item, i) => ({
     ...item,
-    id: `CL-${String(i + 1).padStart(4, "0")}`,
+    id: `CL-${String(i + 1).padStart(4, '0')}`,
   }));
 }
 
@@ -153,19 +144,19 @@ async function mapWithConcurrency<T, R>(
 }
 
 export class LlmPlanAgent implements Agent<PlanInput, ChecklistItem[]> {
-  readonly type = "plan" as const;
+  readonly type = 'plan' as const;
 
-  async run(
-    input: PlanInput,
-    bus: typeof eventBus,
-    config: SubAgentConfig,
-  ): Promise<AgentResult<ChecklistItem[]>> {
+  async run(input: PlanInput, bus: typeof eventBus, config: SubAgentConfig): Promise<AgentResult<ChecklistItem[]>> {
     const agentId = `plan-llm-${crypto.randomUUID().slice(0, 6)}`;
     const start = Date.now();
 
     bus.emit(config.pipelineId, {
-      agentId, agentType: "plan", status: "running", progress: 0,
-      message: "LLM으로 시트 분석 중...", timestamp: new Date().toISOString(),
+      agentId,
+      agentType: 'plan',
+      status: 'running',
+      progress: 0,
+      message: 'LLM으로 시트 분석 중...',
+      timestamp: new Date().toISOString(),
     });
 
     try {
@@ -180,40 +171,39 @@ export class LlmPlanAgent implements Agent<PlanInput, ChecklistItem[]> {
       const promptSuffix = buildPlanPromptSuffix(input.resolvedSkill, input.sourceSheetName);
 
       bus.emit(config.pipelineId, {
-        agentId, agentType: "plan", status: "running", progress: 10,
+        agentId,
+        agentType: 'plan',
+        status: 'running',
+        progress: 10,
         message: `${dataRows.length}행 → ${chunks.length}청크(행당 ${chunkSize}), 동시 ${concurrency}건`,
         timestamp: new Date().toISOString(),
       });
 
       let finishedChunks = 0;
-      const chunkResults = await mapWithConcurrency(
-        chunks,
-        concurrency,
-        async (chunk, ci) => {
-          const baseSourceRow = headerRowIndex + 2 + ci * chunkSize;
-          const projectedRows = chunk.map((row, i) => ({
-            sourceRow: baseSourceRow + i,
-            fields: projectRowToTcSourceFields(row, sourceCols),
-          }));
-          const prompt =
-            promptPrefix
-            + buildPlanPromptChunkBody(input.sourceSheetName, projectedRows)
-            + promptSuffix;
+      const chunkResults = await mapWithConcurrency(chunks, concurrency, async (chunk, ci) => {
+        const baseSourceRow = headerRowIndex + 2 + ci * chunkSize;
+        const projectedRows = chunk.map((row, i) => ({
+          sourceRow: baseSourceRow + i,
+          fields: projectRowToTcSourceFields(row, sourceCols),
+        }));
+        const prompt = promptPrefix + buildPlanPromptChunkBody(input.sourceSheetName, projectedRows) + promptSuffix;
 
-          const { data: compactItems, usage } = await generateJson(prompt, schema);
-          const chunkItems = expandKeys<RawChecklistItem>(compactItems, PLAN_KEY_MAP);
+        const { data: compactItems, usage } = await generateJson(prompt, schema);
+        const chunkItems = expandKeys<RawChecklistItem>(compactItems, PLAN_KEY_MAP);
 
-          finishedChunks++;
-          const progress = 10 + Math.round((finishedChunks / chunks.length) * 80);
-          bus.emit(config.pipelineId, {
-            agentId, agentType: "plan", status: "running", progress,
-            message: `Plan 배치 완료 ${finishedChunks}/${chunks.length} (이번 ${chunkItems.length}건, tokens: ${usage.totalTokens})`,
-            timestamp: new Date().toISOString(),
-          });
+        finishedChunks++;
+        const progress = 10 + Math.round((finishedChunks / chunks.length) * 80);
+        bus.emit(config.pipelineId, {
+          agentId,
+          agentType: 'plan',
+          status: 'running',
+          progress,
+          message: `Plan 배치 완료 ${finishedChunks}/${chunks.length} (이번 ${chunkItems.length}건, tokens: ${usage.totalTokens})`,
+          timestamp: new Date().toISOString(),
+        });
 
-          return { chunkItems, usage };
-        },
-      );
+        return { chunkItems, usage };
+      });
 
       const allRaw: RawChecklistItem[] = [];
       const usages: LlmUsage[] = [];
@@ -228,50 +218,72 @@ export class LlmPlanAgent implements Agent<PlanInput, ChecklistItem[]> {
       const totalUsage = sumUsage(usages);
 
       bus.emit(config.pipelineId, {
-        agentId, agentType: "plan", status: "completed", progress: 100,
+        agentId,
+        agentType: 'plan',
+        status: 'completed',
+        progress: 100,
         message: `LLM 체크리스트 ${checklist.length}건 완료 (${chunks.length}청크, 기능유형 분류 ${classifiedCount}건, tokens: ${totalUsage.totalTokens})`,
         timestamp: new Date().toISOString(),
         payload: { usage: totalUsage },
       });
 
       return {
-        agentId, agentType: "plan", status: "completed",
-        data: checklist, durationMs: Date.now() - start,
+        agentId,
+        agentType: 'plan',
+        status: 'completed',
+        data: checklist,
+        durationMs: Date.now() - start,
       };
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
+      const message = err instanceof Error ? err.message : 'Unknown error';
       console.warn(`[llm-plan] failed, falling back to deterministic: ${message}`);
 
       bus.emit(config.pipelineId, {
-        agentId, agentType: "plan", status: "running", progress: 70,
-        message: "LLM 실패, 규칙 기반 폴백 실행 중...", timestamp: new Date().toISOString(),
+        agentId,
+        agentType: 'plan',
+        status: 'running',
+        progress: 70,
+        message: 'LLM 실패, 규칙 기반 폴백 실행 중...',
+        timestamp: new Date().toISOString(),
       });
 
       try {
         const { headers, dataRows, headerRowIndex } = detectHeaderAndData(input.raw);
-        const checklist = buildChecklist(
-          headers, dataRows, input.sourceSheetName, headerRowIndex, input.resolvedSkill,
-        );
+        const checklist = buildChecklist(headers, dataRows, input.sourceSheetName, headerRowIndex, input.resolvedSkill);
 
         bus.emit(config.pipelineId, {
-          agentId, agentType: "plan", status: "completed", progress: 100,
+          agentId,
+          agentType: 'plan',
+          status: 'completed',
+          progress: 100,
           message: `폴백 체크리스트 ${checklist.length}건 완료`,
           timestamp: new Date().toISOString(),
         });
 
         return {
-          agentId, agentType: "plan", status: "completed",
-          data: checklist, durationMs: Date.now() - start,
+          agentId,
+          agentType: 'plan',
+          status: 'completed',
+          data: checklist,
+          durationMs: Date.now() - start,
         };
       } catch (fallbackErr) {
-        const fbMsg = fallbackErr instanceof Error ? fallbackErr.message : "Unknown error";
+        const fbMsg = fallbackErr instanceof Error ? fallbackErr.message : 'Unknown error';
         bus.emit(config.pipelineId, {
-          agentId, agentType: "plan", status: "failed", progress: 0,
-          message: fbMsg, timestamp: new Date().toISOString(),
+          agentId,
+          agentType: 'plan',
+          status: 'failed',
+          progress: 0,
+          message: fbMsg,
+          timestamp: new Date().toISOString(),
         });
         return {
-          agentId, agentType: "plan", status: "failed",
-          data: null, error: fbMsg, durationMs: Date.now() - start,
+          agentId,
+          agentType: 'plan',
+          status: 'failed',
+          data: null,
+          error: fbMsg,
+          durationMs: Date.now() - start,
         };
       }
     }

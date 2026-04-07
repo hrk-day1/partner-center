@@ -1,8 +1,8 @@
-@import "tailwindcss";
-@import "@fontsource-variable/geist";
+@import 'tailwindcss';
+@import '@fontsource-variable/geist';
 
 @theme {
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
   --color-primary: #18181b;
   --color-accent: #2563eb;
   --color-accent-light: #3b82f6;
