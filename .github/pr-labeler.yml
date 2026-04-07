@@ -1,0 +1,4 @@
+enhancement: ['feature/*', 'feat/*', 'feature:*', '*refactoring*', '*add*', 'refactor*']
+chore: ['*chore*', '*misc*']
+bug: ['fix/*', 'fix:*', '*/fix-*']
+typo: ['*typo*']

@@ -1,0 +1,56 @@
+name: deploy Dev/Qa/Staging
+
+on:
+  workflow_dispatch:
+    inputs:
+      D1_ENV:
+        type: choice
+        description: 'D1_ENV 환경변수'
+        default: 'development'
+        options:
+          - 'development'
+          - 'qa'
+          - 'staging'
+        required: true
+
+run-name: Deploy ${{ inputs.D1_ENV }}-waterbean by ${{ github.actor }}
+
+jobs:
+  deploy:
+    environment:
+      name: ${{ inputs.D1_ENV }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: ${{ secrets.DEV_GCP_CREDENTIALS }}
+          project_id: day1-dev
+      - uses: 'google-github-actions/setup-gcloud@v2'
+      - name: '환경 변수 설정'
+        run: |
+          if [[ "${{ inputs.D1_ENV }}" == "development" ]]; then
+            echo "GAR_REPOSITORY=gar-day1-dev-docker" >> "$GITHUB_ENV"
+          elif [[ "${{ inputs.D1_ENV }}" == "staging" ]]; then
+            echo "GAR_REPOSITORY=gar-day1-stg-docker" >> "$GITHUB_ENV"
+          elif [[ "${{ inputs.D1_ENV }}" == "qa" ]]; then
+            echo "GAR_REPOSITORY=gar-day1-qa-docker" >> "$GITHUB_ENV"
+          else
+            echo "GAR_REPOSITORY=gar-day1-dev-docker" >> "$GITHUB_ENV"
+          fi
+      - run: ./deploy.sh
+        shell: bash
+        env:
+          NO_DRY_RUN: 1
+          GCP_LOCATION: asia-northeast3
+          GCP_PROJECT: day1-dev
+          GCP_VPC_NETWORK: day1-dev-vpc
+          GCP_VPC_SUBNET: day1-dev-prv-vm-01
+          GAR_REPOSITORY: ${{ env.GAR_REPOSITORY }}
+          D1_ENV: ${{ inputs.D1_ENV }}
+          D1_SITE: day1
+          D1_NAME: waterbean
+          D1_VERSION: latest
+          NODE_ENV: production
+          DOCKER_FILE: Dockerfile
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
